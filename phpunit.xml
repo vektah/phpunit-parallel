@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<phpunit
+        verbose="true"
+        bootstrap="vendor/autoload.php"
+        colors="true"
+        stopOnError="false"
+        stopOnFailure="false"
+        stopOnIncomplete="false"
+        stopOnSkipped="false"
+        processIsolation="false"
+        backupGlobals="false"
+        backupStaticAttributes="false"
+    >
+
+    <testsuites>
+        <testsuite name="Tests">
+            <directory>./src/test</directory>
+        </testsuite>
+    </testsuites>
+</phpunit>
