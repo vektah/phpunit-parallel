@@ -89,6 +89,11 @@ class TestResult extends Message
         ];
     }
 
+    public function addError(Error $error)
+    {
+        $this->errors[] = $error;
+    }
+
     /**
      * @return int
      */

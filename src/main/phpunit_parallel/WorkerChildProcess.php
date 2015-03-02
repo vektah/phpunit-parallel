@@ -7,17 +7,19 @@ use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use phpunit_parallel\stream\BufferedReader;
 use React\ChildProcess\Process;
+use React\EventLoop\LoopInterface;
 
 class WorkerChildProcess
 {
     private $id;
     private $loop;
     private $stdout;
-    private $stderr;
     private $distributor;
     private $pendingRequests;
 
-    public function __construct($id, $loop, TestDistributor $distributor)
+    private $testErr;
+
+    public function __construct($id, LoopInterface $loop, TestDistributor $distributor)
     {
         $this->id = $id;
         $this->loop = $loop;
@@ -50,6 +52,7 @@ class WorkerChildProcess
 
         $this->debug("Added " . $test->encode());
 
+        $this->testErr = '';
         $this->pendingRequests->enqueue($test);
         $this->process->stdin->write($test->encode());
     }
@@ -63,7 +66,20 @@ class WorkerChildProcess
     {
         $this->process->start($this->loop);
         $this->stdout = new BufferedReader($this->process->stdout);
-        $this->stderr = new BufferedReader($this->process->stderr);
+
+        $this->process->stderr->on('data', function($data) {
+            $this->testErr .= $data;
+        });
+
+        $this->process->on('exit', function() {
+            if ($this->pendingRequests->count() > 0) {
+                $nextExpectedTest = $this->pendingRequests->dequeue();
+                $this->distributor->testCompleted(
+                    $this,
+                    $this->createErrorForRequest($nextExpectedTest, "Worker{$this->id} died\n{$this->testErr}")
+                );
+            }
+        });
 
         $this->stdout->onLine(function ($line) {
             if ($testResult = TestResult::decode($line)) {
@@ -73,9 +89,16 @@ class WorkerChildProcess
                 if ($nextExpectedTest->getClass() !== $testResult->getClass() ||
                     $nextExpectedTest->getFilename() !== $testResult->getFilename()) {
                     $this->debug("Bad things");
-                    $this->distributor->testCompleted($this, new TestResult($nextExpectedTest->getTestId(), $nextExpectedTest->getClass(), $nextExpectedTest->getName(), $nextExpectedTest->getFilename(), 0, [
-                        new Error(['message' => "Was not run, bad things happened."]) // TODO: Retry on another worker? What about other pending tests?
-                    ]));
+
+                    // TODO: Retry on another worker? What about other pending tests?
+                    $this->distributor->testCompleted(
+                        $this,
+                        $this->createErrorForRequest($nextExpectedTest, 'Was not run, bad things happened.')
+                    );
+                }
+
+                if ($this->testErr) {
+                    $testResult->addError(new Error(['message' => "STDERR: {$this->testErr}"]));
                 }
 
                 $this->distributor->testCompleted($this, $testResult);
@@ -84,14 +107,16 @@ class WorkerChildProcess
 
                 return $testResult;
             } else {
-                echo "Worker{$this->id} STDOUT: " . $line;
+                echo $line;
                 return null;
             }
         });
+    }
 
-        $this->stderr->onLine(function($data) {
-            echo 'Worker{$this->id} STDERR: ' . $data;
-        });
+    private function createErrorForRequest(TestRequest $request, $message) {
+        return new TestResult($request->getId(), $request->getClass(), $request->getName(), $request->getFilename(), 0, [
+            new Error(['message' => $message])
+        ]);
     }
 
     public function getId()
