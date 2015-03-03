@@ -18,7 +18,8 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
     private $incomplete = false;
     private $skipped = false;
     private $risky = false;
-
+    /** @var resource */
+    private $fd;
     /** @var TestRequest */
     private $request;
 
@@ -27,6 +28,12 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
         parent::__construct($out);
         self::$instance = $this;
         $this->setAutoFlush(true);
+        $this->fd = fopen("php://fd/3", "w");
+    }
+
+    public function __destruct()
+    {
+        fclose($this->fd);
     }
 
     /**
@@ -142,7 +149,7 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
             $this->risky
         );
 
-        parent::write($result->encode());
+        $this->sendError($result);
     }
 
     /**
@@ -162,5 +169,10 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
     public function setCurrentRequest(TestRequest $request)
     {
         $this->request = $request;
+    }
+
+    public function sendError($result)
+    {
+        fwrite($this->fd, $result->encode());
     }
 }

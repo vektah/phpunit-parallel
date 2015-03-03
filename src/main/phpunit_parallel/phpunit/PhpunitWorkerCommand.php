@@ -41,9 +41,9 @@ class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
     }
 
     private function showError(TestRequest $request, $string) {
-            $error = new Error(['message' => 'Test not found']);
-            $result = new TestResult($request->getTestId(), $request->getClass(), $request->getFilename(), 0, [$error]);
-            echo "\n{$result->encode()}\n";
+        $error = new Error(['message' => 'Test not found']);
+        $result = new TestResult($request->getId(), $request->getClass(), $request->getFilename(), 0, [$error]);
+        SerializePrinter::getInstance()->sendError($result);
     }
 
     /**

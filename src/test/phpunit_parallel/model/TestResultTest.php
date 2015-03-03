@@ -12,9 +12,4 @@ class TestResultTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals($recodedRequest, $request);
     }
-
-    public function testPassthroughWithoutPreamble()
-    {
-        $this->assertEquals(null, TestResult::decode('asdasdf'));
-    }
 }

@@ -1,19 +1,19 @@
 <?php
 
-namespace phpunit_parallel;
+namespace phpunit_parallel\ipc;
 
+use phpunit_parallel\TestDistributor;
 use phpunit_parallel\model\Error;
 use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use phpunit_parallel\stream\BufferedReader;
-use React\ChildProcess\Process;
 use React\EventLoop\LoopInterface;
 
 class WorkerChildProcess
 {
     private $id;
     private $loop;
-    private $stdout;
+    private $comm;
     private $distributor;
     private $pendingRequests;
 
@@ -29,7 +29,7 @@ class WorkerChildProcess
         $env = $_ENV;
         $env['TEST_TOKEN'] = substr(md5(rand()), 0, 7);
 
-        $this->process = new Process(__DIR__ . '/../../../bin/phpunit-parallel --worker -vvv', null, $env);
+        $this->process = new FourChannelProcess(__DIR__ . '/../../../../bin/phpunit-parallel --worker -vvv', null, $env);
 
         $this->start();
 
@@ -37,7 +37,7 @@ class WorkerChildProcess
     }
 
     private function debug($msg = '') {
-        //echo "Worker{$this->id} DBG: $msg\n";
+//        echo "Worker{$this->id} DBG: $msg\n";
     }
 
     private function startTest() {
@@ -65,10 +65,14 @@ class WorkerChildProcess
     public function start()
     {
         $this->process->start($this->loop);
-        $this->stdout = new BufferedReader($this->process->stdout);
+        $this->comm = new BufferedReader($this->process->comm);
 
         $this->process->stderr->on('data', function($data) {
             $this->testErr .= $data;
+        });
+
+        $this->process->stdout->on('data', function($data) {
+            echo $data;
         });
 
         $this->process->on('exit', function() {
@@ -81,19 +85,24 @@ class WorkerChildProcess
             }
         });
 
-        $this->stdout->onLine(function ($line) {
+        $this->comm->onLine(function ($line) {
             if ($testResult = TestResult::decode($line)) {
                 /** @var TestRequest $nextExpectedTest */
                 $nextExpectedTest = $this->pendingRequests->dequeue();
 
                 if ($nextExpectedTest->getClass() !== $testResult->getClass() ||
-                    $nextExpectedTest->getFilename() !== $testResult->getFilename()) {
+                    $nextExpectedTest->getName() !== $testResult->getName()) {
                     $this->debug("Bad things");
 
                     // TODO: Retry on another worker? What about other pending tests?
                     $this->distributor->testCompleted(
                         $this,
-                        $this->createErrorForRequest($nextExpectedTest, 'Was not run, bad things happened.')
+                        $this->createErrorForRequest(
+                            $nextExpectedTest,
+                            "An unexpected test was run, this could be a naming issue:\n" .
+                            "  Expected {$nextExpectedTest->getName()}::{$nextExpectedTest->getName()}\n" .
+                            "  Got {$testResult->getName()}::{$testResult->getName()}\n"
+                        )
                     );
                 }
 
@@ -104,11 +113,6 @@ class WorkerChildProcess
                 $this->distributor->testCompleted($this, $testResult);
 
                 $this->startTest();
-
-                return $testResult;
-            } else {
-                echo $line;
-                return null;
             }
         });
     }

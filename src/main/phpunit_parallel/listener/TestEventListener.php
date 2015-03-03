@@ -2,7 +2,7 @@
 
 namespace phpunit_parallel\listener;
 
-use phpunit_parallel\WorkerChildProcess;
+use phpunit_parallel\ipc\WorkerChildProcess;
 use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 

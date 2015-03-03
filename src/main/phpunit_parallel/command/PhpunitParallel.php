@@ -3,8 +3,10 @@
 namespace phpunit_parallel\command;
 
 use phpunit_parallel\TestDistributor;
+use phpunit_parallel\listener\ExitStatusListener;
 use phpunit_parallel\listener\LaneOutputFormatter;
 use phpunit_parallel\listener\TapOutputFormatter;
+use phpunit_parallel\listener\TestSummaryOutputFormatter;
 use phpunit_parallel\listener\XUnitOutputFormatter;
 use phpunit_parallel\phpunit\PhpunitWorkerCommand;
 use Symfony\Component\Console\Command\Command;
@@ -48,12 +50,16 @@ class PhpunitParallel extends Command
             include $config->getPHPUnitConfiguration()['bootstrap'];
         }
 
+        $formatter = $input->getOption('formatter');
         $distributor = new TestDistributor($config);
-        $distributor->addListener($this->getFormatter($input->getOption('formatter'), $output));
-
+        $distributor->addListener($this->getFormatter($formatter, $output));
+        $distributor->addListener($exitStatus = new ExitStatusListener());
+        if ($formatter !== 'tap') {
+            $distributor->addListener(new TestSummaryOutputFormatter($output));
+        }
         $distributor->run(System::cpuCount() + 1);
 
-        return 0;
+        return $exitStatus->getExitStatus();
     }
 
     private function getFormatter($formatterName, OutputInterface $output) {
