@@ -10,6 +10,7 @@ use phpunit_parallel\listener\TestSummaryOutputFormatter;
 use phpunit_parallel\listener\XUnitOutputFormatter;
 use phpunit_parallel\phpunit\PhpunitWorkerCommand;
 use Symfony\Component\Console\Command\Command;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -23,6 +24,7 @@ class PhpunitParallel extends Command
         $this->addOption('configuration', 'c', InputOption::VALUE_REQUIRED, 'Read configuration from XML file.');
         $this->addOption('formatter', 'F', InputOption::VALUE_REQUIRED, 'The formatter to use (xunit,tap,lane)', 'lane');
         $this->addOption('worker', 'w', InputOption::VALUE_NONE, 'Run as a worker, accepting a list of test files to run');
+        $this->addArgument('filenames', InputArgument::IS_ARRAY, 'zero or more test filenames to run', []);
     }
 
     public function runWorker()
@@ -47,11 +49,12 @@ class PhpunitParallel extends Command
         $config = \PHPUnit_Util_Configuration::getInstance($configFile);
 
         if (isset($config->getPHPUnitConfiguration()['bootstrap'])) {
-            include $config->getPHPUnitConfiguration()['bootstrap'];
+            dont_leak_env_and_include($config->getPHPUnitConfiguration()['bootstrap']);
         }
 
         $formatter = $input->getOption('formatter');
-        $distributor = new TestDistributor($config);
+
+        $distributor = new TestDistributor($this->getTestSuite($config, $input->getArgument('filenames')));
         $distributor->addListener($this->getFormatter($formatter, $output));
         $distributor->addListener($exitStatus = new ExitStatusListener());
         if ($formatter !== 'tap') {
@@ -60,6 +63,40 @@ class PhpunitParallel extends Command
         $distributor->run(System::cpuCount() + 1);
 
         return $exitStatus->getExitStatus();
+    }
+
+    private function getTestSuite(\PHPUnit_Util_Configuration $config, array $filenames)
+    {
+        if ($filenames) {
+            $tests = new \PHPUnit_Framework_TestSuite();
+            foreach ($filenames as $filename) {
+                foreach ($this->expandFilename($filename) as $test) {
+                    $tests->addTestFile($test);
+                }
+            }
+            return $tests;
+        } else {
+            return $config->getTestSuiteConfiguration();
+        }
+    }
+
+    private function expandFilename($filename) {
+        if (is_dir($filename)) {
+            $directory = new \RecursiveDirectoryIterator($filename);
+            $files = new \RecursiveIteratorIterator($directory);
+            $files = new \RegexIterator($files, '#.php$#i', \RecursiveRegexIterator::GET_MATCH);
+
+            $fileNames = [];
+            foreach ($files as $filename => $file) {
+                $fileNames[] = $filename;
+            }
+            return $fileNames;
+
+        } elseif (is_file($filename)) {
+            return [$filename];
+        } else {
+            throw new \RuntimeException("$filename does not exist!");
+        }
     }
 
     private function getFormatter($formatterName, OutputInterface $output) {
@@ -91,4 +128,8 @@ class PhpunitParallel extends Command
 
         throw new \RuntimeException('Unable to find config file');
     }
+}
+
+function dont_leak_env_and_include($file) {
+    include($file);
 }

@@ -2,6 +2,7 @@
 
 namespace phpunit_parallel;
 
+use PHPUnit_Framework_TestSuite as TestSuite;
 use phpunit_parallel\ipc\WorkerChildProcess;
 use phpunit_parallel\listener\TestEventListener;
 use phpunit_parallel\model\TestRequest;
@@ -19,13 +20,13 @@ class TestDistributor
 
     private $listeners;
 
-    public function __construct(\PHPUnit_Util_Configuration $config)
+    public function __construct(TestSuite $suite)
     {
         $this->loop = Factory::create();
         $this->listeners = new SubscriberList();
 
         $this->tests = new \SplQueue();
-        $this->enumerateTests($config->getTestSuiteConfiguration());
+        $this->enumerateTests($suite);
     }
 
     public function addListener(TestEventListener $listener)
@@ -35,7 +36,7 @@ class TestDistributor
 
     private function enumerateTests($tests) {
         foreach ($tests as $test) {
-            if ($test instanceof \PHPUnit_Framework_TestSuite) {
+            if ($test instanceof TestSuite) {
                 $this->enumerateTests($test);
             } elseif ($test instanceof \PHPUnit_Framework_TestCase) {
                 $this->tests->enqueue($test);
