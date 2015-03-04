@@ -3,11 +3,11 @@
 namespace phpunit_parallel\ipc\WorkerTestExecutorTest;
 
 use Phake;
+use phpunit_parallel\TestDistributor;
 use phpunit_parallel\ipc\WorkerProcess;
 use phpunit_parallel\ipc\WorkerTestExecutor;
 use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
-use phpunit_parallel\TestDistributor;
 
 class WorkerTestExecutorTest extends \PHPUnit_Framework_TestCase
 {
@@ -15,7 +15,7 @@ class WorkerTestExecutorTest extends \PHPUnit_Framework_TestCase
     private $distributor;
     /** @var WorkerProcess */
     private $process;
-    /** @var WorkertestExecutor */
+    /** @var WorkerTestExecutor */
     private $executor;
 
     public function setUp()

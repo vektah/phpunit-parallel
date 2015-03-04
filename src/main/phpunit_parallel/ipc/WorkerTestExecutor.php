@@ -2,10 +2,10 @@
 
 namespace phpunit_parallel\ipc;
 
+use phpunit_parallel\TestDistributor;
 use phpunit_parallel\model\Error;
 use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
-use phpunit_parallel\TestDistributor;
 
 class WorkerTestExecutor implements WorkerListener
 {

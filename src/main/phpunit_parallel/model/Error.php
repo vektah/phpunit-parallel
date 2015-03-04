@@ -4,6 +4,7 @@ namespace phpunit_parallel\model;
 
 class Error extends Message
 {
+    public $class;
     public $filename;
     public $message;
     public $line;
@@ -28,16 +29,14 @@ class Error extends Message
 
     public function getFormatted()
     {
-        $formatted = $this->filename;
+        $formatted = $this->class ? "{$this->class}: {$this->message}'\n" : "{$this->message}\n";
 
-        if ($this->line) {
-            $formatted = "$formatted:{$this->line}";
+        if ($this->filename) {
+            $formatted .= "\nAt: " . ($this->line ? "$this->filename:{$this->line}" : $this->filename) . "\n";
         }
 
-        $formatted = "$formatted {$this->message}";
-
         if ($this->stacktrace) {
-            $formatted .= "\n{$this->stacktrace}";
+            $formatted .= "Trace:\n{$this->stacktrace}";
         }
 
         return $formatted;
