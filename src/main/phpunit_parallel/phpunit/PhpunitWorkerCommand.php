@@ -19,6 +19,7 @@ class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
         $runner = $this->createRunner();
 
         while ($testDetails = fgets(STDIN)) {
+            gc_collect_cycles();
             if ($request = TestRequest::decode($testDetails)) {
                 SerializePrinter::getInstance()->setCurrentRequest($request);
                 $this->arguments['filter'] = $request->getName() . '$';
