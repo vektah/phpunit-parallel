@@ -22,7 +22,8 @@ class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
             gc_collect_cycles();
             if ($request = TestRequest::decode($testDetails)) {
                 SerializePrinter::getInstance()->setCurrentRequest($request);
-                $this->arguments['filter'] = $request->getName() . '$';
+                $escapedClassName = str_replace('\\', '\\\\', $request->getClass());
+                $this->arguments['filter'] = "^$escapedClassName::{$request->getName()}$";
 
                 $suite = new \PHPUnit_Framework_TestSuite($request->getClass());
                 $suite->addTestFile($request->getFilename());
