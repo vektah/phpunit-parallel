@@ -3,7 +3,6 @@
 namespace phpunit_parallel\phpunit;
 
 use PHPUnit_Util_Configuration;
-use phpunit_parallel\model\Error;
 use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use phpunit_parallel\printer\SerializePrinter;
@@ -41,9 +40,7 @@ class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
     }
 
     private function showError(TestRequest $request, $string) {
-        $error = new Error(['message' => 'Test not found']);
-        $result = new TestResult($request->getId(), $request->getClass(), $request->getFilename(), 0, [$error]);
-        SerializePrinter::getInstance()->sendError($result);
+        SerializePrinter::getInstance()->sendError(TestResult::errorFromRequest($request, $string));
     }
 
     /**

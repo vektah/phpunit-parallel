@@ -13,80 +13,78 @@ class TestResult extends Message
     private $class;
     private $name;
     private $filename;
-    private $elapsed;
-    private $errors;
-    private $incomplete;
-    private $skipped;
-    private $risky;
+    private $elapsed = 0;
+    private $memoryUsed = 0;
+    private $errors = [];
+    private $incomplete = false;
+    private $skipped = false;
+    private $risky = false;
 
-    /**
-     * @param int $testId
-     * @param string $class
-     * @param string $name
-     * @param string $filename
-     * @param float $elapsed
-     * @param Error[] $errors
-     * @param boolean $incomplete
-     * @param boolean $skipped
-     * @param boolean $risky
-     */
-    public function __construct($testId, $class, $name, $filename, $elapsed, array $errors = [], $incomplete = false, $skipped = false, $risky = false)
-    {
-        foreach (['class' => $class, 'name' => $name, 'filename' => $filename] as $argName => $arg) {
-            if (!is_string($arg)) {
-                throw new \RuntimeException("$argName must be a string");
+    private static $required = ['testId', 'class', 'name', 'filename'];
+    private static $types = [
+        'testId' => 'integer',
+        'class' => 'string',
+        'name' => 'string',
+        'filename' => 'string',
+        'elapsed' => 'double',
+        'memoryUsed' => 'integer',
+        'errors' => 'array',
+        'incomplete' => 'boolean',
+        'skipped' => 'boolean',
+        'risky' => 'boolean',
+    ];
+
+    public static function errorFromRequest(TestRequest $request, $message) {
+        return new TestResult([
+            'testId' => $request->getId(),
+            'class' => $request->getClass(),
+            'name' => $request->getName(),
+            'filename' => $request->getFilename(),
+            'errors' => [new Error(['message' => $message])]
+        ]);
+    }
+
+    public function __construct(array $data = []) {
+        foreach (self::$required as $name) {
+            if (!isset($data[$name])) {
+                throw new \InvalidArgumentException("$name is required");
             }
         }
 
-        foreach (['incomplete' => $incomplete, 'skipped' => $skipped, 'risky' => $risky] as $argName => $arg) {
-            if (!is_bool($arg)) {
-                throw new \RuntimeException("$argName must be a bool");
+        foreach ($data as $key => $value) {
+            if (!isset(self::$types[$key])) {
+                throw new \InvalidArgumentException("Unknown argument $key");
             }
-        }
 
-        if (!is_int($testId)) {
-            throw new \RuntimeException('$testId must be an int');
-        }
+            $expected = self::$types[$key];
+            $actual = gettype($value);
+            if ($actual !== $expected) {
+                throw new \InvalidArgumentException("$key should be of type $expected, is $actual");
+            }
 
-        $this->testId = $testId;
-        $this->class = $class;
-        $this->name = $name;
-        $this->filename = $filename;
-        $this->elapsed = $elapsed;
-        $this->errors = $errors;
-        $this->incomplete = $incomplete;
-        $this->skipped = $skipped;
-        $this->risky = $risky;
+            $this->$key = $value;
+        }
     }
 
     public static function fromArray(array $data)
     {
-        if (count($data) !== 9) {
-            throw new \RuntimeException("Garbage received from worker: " . print_r($data, true));
+        if (isset($data['errors'])) {
+            $data['errors'] = array_map(function ($error) {
+                return Error::fromArray($error);
+            }, $data['errors']);
         }
 
-        list($testId, $class, $name, $filename, $elapsed, $errors, $incomplete, $skipped, $risky) = $data;
-
-        $errors = array_map(function($error) {
-            return Error::fromArray($error);
-        }, $errors);
-
-        return new TestResult($testId, $class, $name, $filename, $elapsed, $errors, $incomplete, $skipped, $risky);
+        return new TestResult($data);
     }
 
     public function toArray()
     {
-        return [
-            $this->testId,
-            $this->class,
-            $this->name,
-            $this->filename,
-            $this->elapsed,
-            $this->errors,
-            $this->incomplete,
-            $this->skipped,
-            $this->risky,
-        ];
+        $data = [];
+        foreach (self::$types as $key => $value) {
+            $data[$key] = $this->$key;
+        }
+
+        return $data;
     }
 
     public function addError(Error $error)
@@ -126,9 +124,20 @@ class TestResult extends Message
         return $this->filename;
     }
 
+    /**
+     * @return float seconds
+     */
     public function getElapsed()
     {
         return $this->elapsed;
+    }
+
+    /**
+     * @return int bytes
+     */
+    public function getMemoryUsed()
+    {
+        return $this->memoryUsed;
     }
 
     /**

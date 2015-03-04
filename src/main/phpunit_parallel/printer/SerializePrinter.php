@@ -22,6 +22,7 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
     private $fd;
     /** @var TestRequest */
     private $request;
+    private $startingMemory;
 
     public function __construct($out = null)
     {
@@ -65,6 +66,7 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
         $this->failures = [];
         $this->incomplete = false;
         $this->skipped = false;
+        $this->startingMemory = memory_get_usage();
     }
 
     /**
@@ -137,17 +139,18 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
     {
         $reflectionClass = new \ReflectionClass($test);
 
-        $result = new TestResult(
-            $this->request->getId(),
-            get_class($test),
-            $test->getName(),
-            $reflectionClass->getFileName(),
-            $time,
-            $this->errors,
-            $this->incomplete,
-            $this->skipped,
-            $this->risky
-        );
+        $result = new TestResult([
+            'testId' => $this->request->getId(),
+            'class' => get_class($test),
+            'name' => $test->getName(),
+            'filename' => $reflectionClass->getFileName(),
+            'elapsed' => $time,
+            'memoryUsed' => memory_get_usage() - $this->startingMemory,
+            'errors' => $this->errors,
+            'incomplete' => $this->incomplete,
+            'skipped' => $this->skipped,
+            'risky' => $this->risky
+        ]);
 
         $this->sendError($result);
     }

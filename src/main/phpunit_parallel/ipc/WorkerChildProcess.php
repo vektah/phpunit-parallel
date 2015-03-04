@@ -80,7 +80,7 @@ class WorkerChildProcess
                 $nextExpectedTest = $this->pendingRequests->dequeue();
                 $this->distributor->testCompleted(
                     $this,
-                    $this->createErrorForRequest($nextExpectedTest, "Worker{$this->id} died\n{$this->testErr}")
+                    TestResult::errorFromRequest($nextExpectedTest, "Worker{$this->id} died\n{$this->testErr}")
                 );
             }
         });
@@ -97,7 +97,7 @@ class WorkerChildProcess
                     // TODO: Retry on another worker? What about other pending tests?
                     $this->distributor->testCompleted(
                         $this,
-                        $this->createErrorForRequest(
+                        TestResult::errorFromRequest(
                             $nextExpectedTest,
                             "An unexpected test was run, this could be a naming issue:\n" .
                             "  Expected {$nextExpectedTest->getName()}::{$nextExpectedTest->getName()}\n" .
@@ -115,12 +115,6 @@ class WorkerChildProcess
                 $this->startTest();
             }
         });
-    }
-
-    private function createErrorForRequest(TestRequest $request, $message) {
-        return new TestResult($request->getId(), $request->getClass(), $request->getName(), $request->getFilename(), 0, [
-            new Error(['message' => $message])
-        ]);
     }
 
     public function getId()

@@ -52,9 +52,10 @@ class LaneOutputFormatter implements TestEventListener
         }
 
         $details = sprintf(
-            '%3d%%  %5dms  %s::%s',
+            '%3d%%  %5dms  %5.1fMB  %s::%s',
             ($this->executedTests / $this->expectedTests) * 100,
             $result->getElapsed() * 1000,
+            $result->getMemoryUsed() / 1024 / 1024,
             $result->getClass(),
             $result->getName()
         );
