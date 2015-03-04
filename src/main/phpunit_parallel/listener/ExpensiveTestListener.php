@@ -41,7 +41,8 @@ class ExpensiveTestListener implements TestEventListener
         if (count($this->byMemory) > 0) {
             $this->output->writeln("Most expensive tests by memory usage are:");
             for ($i = 0; $i < 5; $i++) {
-                if ($test = $this->byMemory->extract()) {
+                if (!$this->byMemory->isEmpty()) {
+                    $test = $this->byMemory->extract();
                     $this->output->writeln(sprintf(
                         ' %5.1fMB %s::%s',
                         $test->getMemoryUsed() / 1024 / 1024,
@@ -56,7 +57,8 @@ class ExpensiveTestListener implements TestEventListener
         if (count($this->byDuration) > 0) {
             $this->output->writeln("Most expensive tests by duration are:");
             for ($i = 0; $i < 5; $i++) {
-                if ($test = $this->byDuration->extract()) {
+                if (!$this->byDuration->isEmpty()) {
+                    $test = $this->byDuration->extract();
                     $this->output->writeln(sprintf(
                         ' %5dms %s::%s',
                         $test->getElapsed() * 1000,

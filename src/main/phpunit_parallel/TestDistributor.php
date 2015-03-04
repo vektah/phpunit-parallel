@@ -39,7 +39,7 @@ class TestDistributor
         foreach ($tests as $test) {
             if ($test instanceof \PHPUnit_Framework_Warning) {
                 // What. The. Hell?
-            } if ($test instanceof TestSuite) {
+            } elseif ($test instanceof TestSuite) {
                 $this->enumerateTests($test);
             } elseif ($test instanceof \PHPUnit_Framework_TestCase) {
                 $this->tests->enqueue($test);

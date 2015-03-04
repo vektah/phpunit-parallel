@@ -78,7 +78,7 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
      */
     public function addError(PHPUnit_Framework_Test $test, Exception $e, $time)
     {
-        if ($e instanceof \PHPUnit_Framework_ExpectationFailedException) {
+        if ($e instanceof \PHPUnit_Framework_ExpectationFailedException && $e->getComparisonFailure()) {
             $message = $e->getComparisonFailure()->toString();
         } elseif ($e instanceof \PHPUnit_Framework_SelfDescribing) {
             $message = $e->toString();
