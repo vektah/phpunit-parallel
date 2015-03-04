@@ -110,6 +110,14 @@ class TestResult extends Message
     /**
      * @return string
      */
+    public function getShortClassName()
+    {
+        return basename(str_replace('\\', '/', $this->class));
+    }
+
+    /**
+     * @return string
+     */
     public function getName()
     {
         return $this->name;

@@ -56,7 +56,7 @@ class LaneOutputFormatter implements TestEventListener
             ($this->executedTests / $this->expectedTests) * 100,
             $result->getElapsed() * 1000,
             $result->getMemoryUsed() / 1024 / 1024,
-            $result->getClass(),
+            $result->getShortClassName(),
             $result->getName()
         );
 

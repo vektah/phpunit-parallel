@@ -86,13 +86,14 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
             $message = $e->getMessage();
         }
 
+
         $this->errors[] = [
             'class' => get_class($e),
             'message' => $message,
             'filename' => $e->getFile(),
             'line' => $e->getLine(),
             'severity' => 'error',
-            'stacktrace' => $e->getTraceAsString(),
+            'stacktrace' => str_replace(' ' . getcwd() . '/', ' ', $e->getTraceAsString()),
         ];
     }
 

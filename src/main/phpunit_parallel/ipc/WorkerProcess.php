@@ -21,7 +21,7 @@ class WorkerProcess
         $env = $_ENV;
         $env['TEST_TOKEN'] = substr(md5(rand()), 0, 7);
 
-        $this->process = new FourChannelProcess(__DIR__ . '/../../../../bin/phpunit-parallel --worker -vvv', null, $env);
+        $this->process = new FourChannelProcess(__DIR__ . '/../../../../bin/phpunit-parallel --worker -vvv', getcwd(), $env);
 
         $this->start();
     }

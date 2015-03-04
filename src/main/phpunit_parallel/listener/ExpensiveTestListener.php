@@ -46,7 +46,7 @@ class ExpensiveTestListener implements TestEventListener
                     $this->output->writeln(sprintf(
                         ' %5.1fMB %s::%s',
                         $test->getMemoryUsed() / 1024 / 1024,
-                        $test->getClass(),
+                        $test->getShortClassName(),
                         $test->getName()
                     ));
                 }
@@ -62,7 +62,7 @@ class ExpensiveTestListener implements TestEventListener
                     $this->output->writeln(sprintf(
                         ' %5dms %s::%s',
                         $test->getElapsed() * 1000,
-                        $test->getClass(),
+                        $test->getShortClassName(),
                         $test->getName()
                     ));
                 }
