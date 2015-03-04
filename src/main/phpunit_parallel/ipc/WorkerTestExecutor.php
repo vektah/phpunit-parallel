@@ -50,20 +50,14 @@ class WorkerTestExecutor implements WorkerListener
         /** @var TestRequest $nextExpectedTest */
         $nextExpectedTest = $this->pendingRequests->dequeue();
 
-        if ($nextExpectedTest->getClass() !== $testResult->getClass() ||
-            $nextExpectedTest->getName() !== $testResult->getName()) {
+        if ($nextExpectedTest->getId() !== $testResult->getId()) {
             $this->debug("Bad things");
 
-            // TODO: Retry on another worker? What about other pending tests?
-            $this->distributor->testCompleted(
-                $this,
-                TestResult::errorFromRequest(
-                    $nextExpectedTest,
-                    "An unexpected test was run, this could be a naming issue:\n" .
-                    "  Expected {$nextExpectedTest->getName()}::{$nextExpectedTest->getName()}\n" .
-                    "  Got {$testResult->getName()}::{$testResult->getName()}\n"
-                )
-            );
+            $testResult->addError(new Error([
+                'message' => "An unexpected test was run, this could be a naming issue:\n" .
+                    "  Expected #{$nextExpectedTest->getId()} - {$nextExpectedTest->getClass()}::{$nextExpectedTest->getName()}\n" .
+                    "  Got #{$testResult->getId()} - {$testResult->getClass()}::{$testResult->getName()}\n"
+            ]));
         }
 
         if ($this->testErr) {

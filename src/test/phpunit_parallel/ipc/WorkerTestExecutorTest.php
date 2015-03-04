@@ -86,4 +86,25 @@ class WorkerTestExecutorTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(0, $response->getId());
         $this->assertEquals("Worker1 died while not running any tests! code: 1\na message", $response->getErrors()[0]->message);
     }
+
+    public function testProcessSendsUnexpectedResult()
+    {
+        $request1 = new TestRequest(1, 'foo', 'oo', 'footest.php');
+        $request2 = new TestRequest(2, 'b', 'ar', 'bartest.php');
+
+        $this->executor->run($request1);
+        $this->executor->onTestResult(TestResult::errorFromRequest($request2, "Didn't bar!"));
+
+        Phake::verify($this->distributor, Phake::atMost(1))->testCompleted(Phake::anyParameters());
+        Phake::verify($this->distributor)->testCompleted($this->executor, Phake::capture($response));
+
+        $this->assertEquals(2, $response->getId());
+        $this->assertEquals("Didn't bar!", $response->getErrors()[0]->message);
+        $this->assertEquals(
+            "An unexpected test was run, this could be a naming issue:\n" .
+            "  Expected #1 - foo::footest.php\n" .
+            "  Got #2 - b::bartest.php\n",
+            $response->getErrors()[1]->message
+        );
+    }
 }
