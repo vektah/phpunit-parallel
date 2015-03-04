@@ -23,4 +23,13 @@ class TestResultTest extends \PHPUnit_Framework_TestCase
 
         $this->assertEquals($recodedRequest, $request);
     }
+
+    public function testCreateFromRequest()
+    {
+        $request = new TestRequest(1, 'a', 'b', 'c');
+
+        $result = TestResult::errorFromRequest($request, 'asdf');
+
+        $this->assertEquals(1, $result->getId());
+    }
 }

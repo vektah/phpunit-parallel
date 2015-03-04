@@ -2,9 +2,9 @@
 
 namespace phpunit_parallel\command;
 
-use phpunit_parallel\listener\ExpensiveTestListener;
 use phpunit_parallel\TestDistributor;
 use phpunit_parallel\listener\ExitStatusListener;
+use phpunit_parallel\listener\ExpensiveTestListener;
 use phpunit_parallel\listener\LaneOutputFormatter;
 use phpunit_parallel\listener\TapOutputFormatter;
 use phpunit_parallel\listener\TestSummaryOutputFormatter;

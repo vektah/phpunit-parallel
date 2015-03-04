@@ -13,7 +13,7 @@ class TestResult extends Message
     private $class;
     private $name;
     private $filename;
-    private $elapsed = 0;
+    private $elapsed = 0.0;
     private $memoryUsed = 0;
     private $errors = [];
     private $incomplete = false;
@@ -22,12 +22,12 @@ class TestResult extends Message
 
     private static $required = ['testId', 'class', 'name', 'filename'];
     private static $types = [
-        'testId' => 'integer',
+        'testId' => 'numeric',
         'class' => 'string',
         'name' => 'string',
         'filename' => 'string',
-        'elapsed' => 'double',
-        'memoryUsed' => 'integer',
+        'elapsed' => 'numeric',
+        'memoryUsed' => 'numeric',
         'errors' => 'array',
         'incomplete' => 'boolean',
         'skipped' => 'boolean',
@@ -58,8 +58,14 @@ class TestResult extends Message
 
             $expected = self::$types[$key];
             $actual = gettype($value);
-            if ($actual !== $expected) {
-                throw new \InvalidArgumentException("$key should be of type $expected, is $actual");
+            if ($expected === 'numeric') {
+                if (!is_numeric($value)) {
+                    throw new \InvalidArgumentException("$key should be numeric, is $actual");
+                }
+            } else {
+                if ($actual !== $expected) {
+                    throw new \InvalidArgumentException("$key should be of type $expected, is $actual");
+                }
             }
 
             $this->$key = $value;
