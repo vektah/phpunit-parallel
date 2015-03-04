@@ -2,6 +2,7 @@
 
 namespace phpunit_parallel\command;
 
+use phpunit_parallel\listener\ExpensiveTestListener;
 use phpunit_parallel\TestDistributor;
 use phpunit_parallel\listener\ExitStatusListener;
 use phpunit_parallel\listener\LaneOutputFormatter;
@@ -59,6 +60,7 @@ class PhpunitParallel extends Command
         $distributor->addListener($exitStatus = new ExitStatusListener());
         if ($formatter !== 'tap') {
             $distributor->addListener(new TestSummaryOutputFormatter($output));
+            $distributor->addListener(new ExpensiveTestListener($output));
         }
         $distributor->run(System::cpuCount() + 1);
 
