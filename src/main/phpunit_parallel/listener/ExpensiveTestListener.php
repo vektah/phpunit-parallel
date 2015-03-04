@@ -2,7 +2,7 @@
 
 namespace phpunit_parallel\listener;
 
-use phpunit_parallel\ipc\WorkerChildProcess;
+use phpunit_parallel\ipc\WorkerTestExecutor;
 use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -26,11 +26,11 @@ class ExpensiveTestListener implements TestEventListener
     {
     }
 
-    public function testStarted(WorkerChildProcess $worker, TestRequest $request)
+    public function testStarted(WorkerTestExecutor $worker, TestRequest $request)
     {
     }
 
-    public function testCompleted(WorkerChildProcess $worker, TestResult $result)
+    public function testCompleted(WorkerTestExecutor $worker, TestResult $result)
     {
         $this->byMemory->insert($result, $result->getMemoryUsed());
         $this->byDuration->insert($result, $result->getElapsed());

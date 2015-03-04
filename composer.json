@@ -24,7 +24,8 @@
         "vektah/bugfree-dangerzone": "*",
         "phpunit/phpunit": "~4",
         "vektah/psr2": "*",
-        "squizlabs/php_codesniffer": "~1.0"
+        "squizlabs/php_codesniffer": "~1.0",
+        "phake/phake": "v2.0.0-rc1"
     },
 
     "bin": [

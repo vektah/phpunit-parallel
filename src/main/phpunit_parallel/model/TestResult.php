@@ -9,10 +9,10 @@ class TestResult extends Message
 {
     const PREAMBLE = '!!(╯°□°）╯︵ ┻━┻!!';
 
-    private $testId;
-    private $class;
-    private $name;
-    private $filename;
+    private $testId = 0;
+    private $class = 'Unknown';
+    private $name = 'unknown';
+    private $filename = '/dev/null';
     private $elapsed = 0.0;
     private $memoryUsed = 0;
     private $errors = [];
@@ -20,7 +20,6 @@ class TestResult extends Message
     private $skipped = false;
     private $risky = false;
 
-    private static $required = ['testId', 'class', 'name', 'filename'];
     private static $types = [
         'testId' => 'numeric',
         'class' => 'string',
@@ -45,12 +44,6 @@ class TestResult extends Message
     }
 
     public function __construct(array $data = []) {
-        foreach (self::$required as $name) {
-            if (!isset($data[$name])) {
-                throw new \InvalidArgumentException("$name is required");
-            }
-        }
-
         foreach ($data as $key => $value) {
             if (!isset(self::$types[$key])) {
                 throw new \InvalidArgumentException("Unknown argument $key");

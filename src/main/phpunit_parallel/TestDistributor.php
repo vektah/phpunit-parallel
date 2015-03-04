@@ -3,7 +3,8 @@
 namespace phpunit_parallel;
 
 use PHPUnit_Framework_TestSuite as TestSuite;
-use phpunit_parallel\ipc\WorkerChildProcess;
+use phpunit_parallel\ipc\WorkerProcess;
+use phpunit_parallel\ipc\WorkerTestExecutor;
 use phpunit_parallel\listener\TestEventListener;
 use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
@@ -48,9 +49,9 @@ class TestDistributor
         }
     }
 
-    public function getNextTest(WorkerChildProcess $worker)
-    {
+    private function runNextTestOn(WorkerTestExecutor $worker) {
         if (count($this->tests) === 0) {
+            $worker->stop();
             return null;
         }
 
@@ -61,12 +62,13 @@ class TestDistributor
         $request = new TestRequest(++$this->lastTestId, get_class($test), $filename, $test->getName());
         $this->listeners->testStarted($worker, $request);
 
-        return $request;
+        $worker->run($request);
     }
 
-    public function testCompleted(WorkerChildProcess $worker, TestResult $result)
+    public function testCompleted(WorkerTestExecutor $worker, TestResult $result)
     {
         $this->listeners->testCompleted($worker, $result);
+        $this->runNextTestOn($worker);
     }
 
     public function run($numWorkers)
@@ -76,7 +78,9 @@ class TestDistributor
         $this->listeners->begin($numWorkers, count($this->tests));
 
         for ($i = 0; $i < $numWorkers; $i++) {
-            new WorkerChildProcess($i, $this->loop, $this);
+            $process = new WorkerProcess($this->loop);
+            $process->addListener($worker = new WorkerTestExecutor($i, $this, $process));
+            $this->runNextTestOn($worker);
         }
 
         $this->loop->run();
