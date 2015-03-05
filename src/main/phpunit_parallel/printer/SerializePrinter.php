@@ -86,6 +86,10 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
             $message = $e->getMessage();
         }
 
+        $trace = TraceFormatter::create($e->getTrace())
+            ->replace('file', getcwd() . '/', '')
+            ->wrapNotMatching('file', '#vendor#', '<comment>', '</comment>')
+            ->printf("%{id}3d. %{call}s\n\t- %{location}s");
 
         $this->errors[] = [
             'class' => get_class($e),
@@ -93,7 +97,7 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
             'filename' => $e->getFile(),
             'line' => $e->getLine(),
             'severity' => 'error',
-            'stacktrace' => str_replace(' ' . getcwd() . '/', ' ', $e->getTraceAsString()),
+            'stacktrace' => $trace,
         ];
     }
 
