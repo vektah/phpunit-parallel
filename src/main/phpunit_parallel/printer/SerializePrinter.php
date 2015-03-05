@@ -87,6 +87,7 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
         }
 
         $trace = TraceFormatter::create($e->getTrace())
+            ->filterBelow('file', '#TextUI/TestRunner#')
             ->replace('file', getcwd() . '/', '')
             ->wrapNotMatching('file', '#vendor#', '<comment>', '</comment>')
             ->printf("%{id}3d. %{call}s\n\t- %{location}s");

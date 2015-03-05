@@ -28,6 +28,19 @@ class TraceFormatter
         return $this;
     }
 
+
+    public function filterBelow($term, $pattern)
+    {
+        foreach ($this->stacktrace as $id => $frame) {
+            if (isset($frame[$term]) && preg_match($pattern, $frame[$term])) {
+                $this->stacktrace = array_slice($this->stacktrace, 0, $id);
+                return $this;
+            }
+        }
+
+        return $this;
+    }
+
     public function wrapNotMatching($term, $pattern, $before, $after)
     {
         foreach ($this->stacktrace as $id => $frame) {

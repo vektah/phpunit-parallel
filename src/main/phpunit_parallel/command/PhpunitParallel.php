@@ -62,7 +62,7 @@ class PhpunitParallel extends Command
             $distributor->addListener(new TestSummaryOutputFormatter($output));
             $distributor->addListener(new ExpensiveTestListener($output));
         }
-        $distributor->run(System::cpuCount() + 1);
+        $distributor->run((int)(System::cpuCount() * 1.34));
 
         return $exitStatus->getExitStatus();
     }
