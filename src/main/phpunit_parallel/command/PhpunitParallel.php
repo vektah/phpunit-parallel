@@ -26,6 +26,7 @@ class PhpunitParallel extends Command
         $this->addOption('formatter', 'F', InputOption::VALUE_REQUIRED, 'The formatter to use (xunit,tap,lane)', 'lane');
         $this->addOption('worker', 'w', InputOption::VALUE_NONE, 'Run as a worker, accepting a list of test files to run');
         $this->addArgument('filenames', InputArgument::IS_ARRAY, 'zero or more test filenames to run', []);
+        $this->addOption('workers', 'C', InputOption::VALUE_REQUIRED, 'Number of workers to spawn', System::cpuCount() + 1);
     }
 
     public function runWorker()
@@ -62,7 +63,7 @@ class PhpunitParallel extends Command
             $distributor->addListener(new TestSummaryOutputFormatter($output));
             $distributor->addListener(new ExpensiveTestListener($output));
         }
-        $distributor->run((int)(System::cpuCount() * 1.34));
+        $distributor->run($input->getOption('workers'));
 
         return $exitStatus->getExitStatus();
     }
