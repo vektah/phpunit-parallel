@@ -21,6 +21,8 @@ class TestDistributor
 
     private $listeners;
 
+    private $workers = [];
+
     public function __construct(TestSuite $suite)
     {
         $this->loop = Factory::create();
@@ -71,6 +73,14 @@ class TestDistributor
         $this->runNextTestOn($worker);
     }
 
+    public function stop()
+    {
+        foreach ($this->workers as $worker) {
+            $worker->stop();
+        }
+        $this->loop->stop();
+    }
+
     public function run($numWorkers)
     {
         $numWorkers = min(count($this->tests), $numWorkers);
@@ -81,6 +91,7 @@ class TestDistributor
             $process = new WorkerProcess($this->loop);
             $process->addListener($worker = new WorkerTestExecutor($i, $this, $process));
             $this->runNextTestOn($worker);
+            $this->workers[] = $worker;
         }
 
         $this->loop->run();

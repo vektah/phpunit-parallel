@@ -7,6 +7,7 @@ use phpunit_parallel\listener\ExitStatusListener;
 use phpunit_parallel\listener\ExpensiveTestListener;
 use phpunit_parallel\listener\JsonOutputFormatter;
 use phpunit_parallel\listener\LaneOutputFormatter;
+use phpunit_parallel\listener\StopOnErrorListener;
 use phpunit_parallel\listener\TapOutputFormatter;
 use phpunit_parallel\listener\TestSummaryOutputFormatter;
 use phpunit_parallel\listener\XUnitOutputFormatter;
@@ -30,6 +31,7 @@ class PhpunitParallel extends Command
         $this->addArgument('filenames', InputArgument::IS_ARRAY, 'zero or more test filenames to run', []);
         $this->addOption('workers', 'C', InputOption::VALUE_REQUIRED, 'Number of workers to spawn', System::cpuCount() + 1);
         $this->addOption('write', 'W', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Takes a pair of format:filename, where format is one of the --formatter arguments');
+        $this->addOption('stop-on-error', null, InputOption::VALUE_NONE, 'Stop if an error is encountered on any worker');
     }
 
     public function runWorker()
@@ -62,6 +64,10 @@ class PhpunitParallel extends Command
         $distributor = new TestDistributor($this->getTestSuite($config, $input->getArgument('filenames')));
         $distributor->addListener($this->getFormatter($formatter, $output));
         $distributor->addListener($exitStatus = new ExitStatusListener());
+        if ($input->getOption('stop-on-error')) {
+            $distributor->addListener(new StopOnErrorListener($distributor));
+        }
+
         if ($formatter !== 'tap') {
             $distributor->addListener(new TestSummaryOutputFormatter($output));
             $distributor->addListener(new ExpensiveTestListener($output));
