@@ -5,6 +5,7 @@ namespace phpunit_parallel\command;
 use phpunit_parallel\TestDistributor;
 use phpunit_parallel\listener\ExitStatusListener;
 use phpunit_parallel\listener\ExpensiveTestListener;
+use phpunit_parallel\listener\JsonOutputFormatter;
 use phpunit_parallel\listener\LaneOutputFormatter;
 use phpunit_parallel\listener\TapOutputFormatter;
 use phpunit_parallel\listener\TestSummaryOutputFormatter;
@@ -15,6 +16,7 @@ use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Console\Output\StreamOutput;
 use vektah\common\System;
 
 class PhpunitParallel extends Command
@@ -27,6 +29,7 @@ class PhpunitParallel extends Command
         $this->addOption('worker', 'w', InputOption::VALUE_NONE, 'Run as a worker, accepting a list of test files to run');
         $this->addArgument('filenames', InputArgument::IS_ARRAY, 'zero or more test filenames to run', []);
         $this->addOption('workers', 'C', InputOption::VALUE_REQUIRED, 'Number of workers to spawn', System::cpuCount() + 1);
+        $this->addOption('write', 'W', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Takes a pair of format:filename, where format is one of the --formatter arguments');
     }
 
     public function runWorker()
@@ -63,9 +66,27 @@ class PhpunitParallel extends Command
             $distributor->addListener(new TestSummaryOutputFormatter($output));
             $distributor->addListener(new ExpensiveTestListener($output));
         }
+
+        $this->handleWriters($input->getOption('write'), $distributor);
+
         $distributor->run($input->getOption('workers'));
 
         return $exitStatus->getExitStatus();
+    }
+
+    private function handleWriters(array $writers, TestDistributor $distributor)
+    {
+        foreach ($writers as $writer) {
+            if (!strpos($writer, ':')) {
+                throw new \InvalidArgumentException("Writers must be in the format format:filename");
+            }
+
+            list($formatter, $filename) = explode(':', $writer);
+
+            $file = fopen($filename, 'w');
+            $output = new StreamOutput($file);
+            $distributor->addListener($this->getFormatter($formatter, $output));
+        }
     }
 
     private function getTestSuite(\PHPUnit_Util_Configuration $config, array $filenames)
@@ -112,6 +133,12 @@ class PhpunitParallel extends Command
 
             case 'xunit':
                 return new XUnitOutputFormatter($output);
+
+            case 'json':
+                return new JsonOutputFormatter($output);
+
+            default:
+                throw new \RuntimeException("Unknown formatter $formatterName");
         }
     }
 
