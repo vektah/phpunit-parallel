@@ -1,0 +1,24 @@
+#!/usr/bin/env php
+<?php
+
+error_reporting(E_ALL);
+ini_set('error_logging', true);
+ini_set('display_errors', true);
+
+$files =  [
+    __DIR__ . "/../../../../vendor/autoload.php",
+    __DIR__ . "/../../../vendor/autoload.php",
+    __DIR__ . "/../../vendor/autoload.php",
+    __DIR__ . "/../vendor/autoload.php",
+];
+
+foreach ($files as $file) {
+    if (file_exists($file)) {
+        require_once($file);
+        break;
+    }
+}
+
+$application = new \Symfony\Component\Console\Application();
+$application->add(new \phpunit_parallel\command\CommonAncestor());
+$application->run();

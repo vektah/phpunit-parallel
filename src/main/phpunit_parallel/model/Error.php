@@ -29,7 +29,7 @@ class Error extends Message
 
     public function getFormatted()
     {
-        $formatted = $this->class ? "{$this->class}: {$this->message}'\n" : "{$this->message}\n";
+        $formatted = $this->class ? "{$this->class}: {$this->message}\n" : "{$this->message}\n";
 
         if ($this->filename) {
             $formatted .= "\nAt: " . ($this->line ? "$this->filename:{$this->line}" : $this->filename) . "\n";
