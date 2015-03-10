@@ -7,6 +7,7 @@ use phpunit_parallel\listener\ExitStatusListener;
 use phpunit_parallel\listener\ExpensiveTestListener;
 use phpunit_parallel\listener\JsonOutputFormatter;
 use phpunit_parallel\listener\LaneOutputFormatter;
+use phpunit_parallel\listener\NoiselessOutputFormatter;
 use phpunit_parallel\listener\StopOnErrorListener;
 use phpunit_parallel\listener\TapOutputFormatter;
 use phpunit_parallel\listener\TestSummaryOutputFormatter;
@@ -26,7 +27,7 @@ class PhpunitParallel extends Command
     {
         $this->setName('phpunit-parallel');
         $this->addOption('configuration', 'c', InputOption::VALUE_REQUIRED, 'Read configuration from XML file.');
-        $this->addOption('formatter', 'F', InputOption::VALUE_REQUIRED, 'The formatter to use (xunit,tap,lane)', 'lane');
+        $this->addOption('formatter', 'F', InputOption::VALUE_REQUIRED, 'The formatter to use (xunit,tap,lane,noiseless)', 'lane');
         $this->addOption('worker', 'w', InputOption::VALUE_NONE, 'Run as a worker, accepting a list of test files to run');
         $this->addArgument('filenames', InputArgument::IS_ARRAY, 'zero or more test filenames to run', []);
         $this->addOption('workers', 'C', InputOption::VALUE_REQUIRED, 'Number of workers to spawn', System::cpuCount() + 1);
@@ -68,8 +69,11 @@ class PhpunitParallel extends Command
             $distributor->addListener(new StopOnErrorListener($distributor));
         }
 
-        if ($formatter !== 'tap') {
+        if ($formatter == 'xunit' || $formatter == 'lane') {
             $distributor->addListener(new TestSummaryOutputFormatter($output));
+        }
+
+        if (!($formatter == 'tap' || $formatter == 'json')) {
             $distributor->addListener(new ExpensiveTestListener($output));
         }
 
@@ -142,6 +146,9 @@ class PhpunitParallel extends Command
 
             case 'json':
                 return new JsonOutputFormatter($output);
+
+            case 'noiseless':
+                return new NoiselessOutputFormatter($output);
 
             default:
                 throw new \RuntimeException("Unknown formatter $formatterName");

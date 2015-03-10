@@ -20,7 +20,7 @@ foreach ($files as $file) {
 }
 
 // Recursion detection
-declare(ticks=750);
+declare(ticks=1000);
 
 register_tick_function(function () {
     if (count(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) > 600) {
