@@ -19,5 +19,16 @@ foreach ($files as $file) {
     }
 }
 
+// Recursion detection
+declare(ticks=100);
+
+register_tick_function(function () {
+    if (count(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) > 100) {
+        echo "Recursion detected!\n";
+        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+        exit(127);
+    }
+});
+
 $application = new \phpunit_parallel\command\Application();
 $application->run();

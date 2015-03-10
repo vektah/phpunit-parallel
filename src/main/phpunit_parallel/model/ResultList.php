@@ -25,16 +25,13 @@ class ResultList implements \IteratorAggregate
     }
 
     /**
-     * @return Error[] keyed on the RESULT ID, not the error ID. This means there could be multiple
-     *    errors with the same id if one test had more then one error.
+     * @return TestResult[]|\Generator
      */
-    public function getErrors()
+    public function getTestsWithErrors()
     {
         foreach ($this->results as $id => $result) {
             if ($result['errors']) {
-                foreach ($result['errors'] as $error) {
-                    yield $id => new Error($error);
-                }
+                yield $id => TestResult::fromArray($result);
             }
         }
     }
@@ -55,7 +52,7 @@ class ResultList implements \IteratorAggregate
         }
 
         for ($i = 0; $i < $resultId; $i++) {
-            yield new TestResult($this->results[$i]);
+            yield TestResult::fromArray($this->results[$i]);
         }
     }
 }

@@ -2,7 +2,9 @@
 
 namespace phpunit_parallel\command;
 
+use phpunit_parallel\model\Error;
 use phpunit_parallel\model\ResultList;
+use phpunit_parallel\model\TestResult;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -27,17 +29,20 @@ class CommonAncestor extends Command
 
         foreach ($runs as $runId => $run) {
             foreach ($run as $resultList) {
-                foreach ($resultList->getErrors() as $resultId => $error) {
-                    $precedingTestNames = [];
-                    foreach ($resultList->getAllTestsBefore($resultId) as $precedingTest) {
-                        $precedingTestNames["{$precedingTest->getShortClassName()}::{$precedingTest->getName()}"] = 1;
-                    }
+                foreach ($resultList->getTestsWithErrors() as $resultId => $test) {
+                    foreach ($test->getErrors() as $error) {
+                        $precedingTestNames = [];
+                        foreach ($resultList->getAllTestsBefore($resultId) as $precedingTest) {
+                            $precedingTestNames["{$precedingTest->getShortClassName()}::{$precedingTest->getName()}"] = 1;
+                        }
 
-                    $groupedErrors[$error->message][] = [
-                        'error' => $error,
-                        'precedingTests' => $precedingTestNames,
-                        'runId' => $runId
-                    ];
+                        $groupedErrors[$this->getGroupKey($error)][] = [
+                            'error' => $error,
+                            'precedingTests' => $precedingTestNames,
+                            'runId' => $runId,
+                            'test' => $test,
+                        ];
+                    }
                 }
             }
         }
@@ -51,10 +56,11 @@ class CommonAncestor extends Command
             }
 
             $firstTest = array_pop($errorSummaries);
+            $output->writeln("Groupkey:" . $message);
             $output->writeln($firstTest['error']->getFormatted());
 
             if ($numSamples == 1) {
-                $output->writeln("Not enough samples to collect precursor data.");
+                $output->writeln("Not enough samples to collect precursor data.\n");
                 continue;
             }
 
@@ -70,16 +76,27 @@ class CommonAncestor extends Command
                 }
             }
 
+            $output->writeln("Encountered during these tests:");
+            foreach ($errorSummaries as $summary) {
+                /** @var TestResult $test */
+                $test = $summary['test'];
+                $output->writeln("  {$test->getShortClassName()}::{$test->getName()}");
+            }
+            $output->writeln('');
+
+
+
             $output->writeln("These tests may be precursors:");
             uasort($precedingTestCount, function($a, $b) {
                 return $b - $a;
             });
 
-            $limit = 5;
+            $limit = 15;
             foreach ($precedingTestCount as $commonTest => $count) {
                 $output->writeln(sprintf(
-                    '%3d%% %s',
-                    $count / $numSamples * 100,
+                    "  %2d/%2d %s",
+                    $count,
+                    $numSamples,
                     $commonTest
                 ));
 
@@ -87,7 +104,17 @@ class CommonAncestor extends Command
                     break;
                 }
             }
+            $output->writeln('');
         }
+    }
+
+    private function getGroupKey(Error $error) {
+        $message = $error->message;
+
+        $message = preg_replace('#Worker[0-9]*#', 'Worker#', $message);
+        $message = preg_replace('#An exception has been thrown during the rendering of a template.*#', 'TwigFailure', $message);
+
+        return $message;
     }
 
     /**
