@@ -20,11 +20,11 @@ foreach ($files as $file) {
 }
 
 // Recursion detection
-declare(ticks=100);
+declare(ticks=750);
 
 register_tick_function(function () {
-    if (count(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) > 100) {
-        echo "Recursion detected!\n";
+    if (count(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) > 600) {
+        echo "\n\nRecursion detected!\n";
         debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
         exit(127);
     }
