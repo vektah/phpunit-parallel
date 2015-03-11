@@ -2,7 +2,6 @@
 
 namespace phpunit_parallel\model;
 
-use ArrayIterator;
 
 class ResultList implements \IteratorAggregate
 {
@@ -38,7 +37,9 @@ class ResultList implements \IteratorAggregate
 
     public function getIterator()
     {
-        return new ArrayIterator($this->results);
+        foreach ($this->results as $result) {
+            yield TestResult::fromArray($result);
+        }
     }
 
     /**

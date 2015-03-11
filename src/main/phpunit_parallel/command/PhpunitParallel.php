@@ -3,6 +3,7 @@
 namespace phpunit_parallel\command;
 
 use phpunit_parallel\TestDistributor;
+use phpunit_parallel\TestLocator;
 use phpunit_parallel\listener\ExitStatusListener;
 use phpunit_parallel\listener\ExpensiveTestListener;
 use phpunit_parallel\listener\JsonOutputFormatter;
@@ -33,6 +34,7 @@ class PhpunitParallel extends Command
         $this->addOption('workers', 'C', InputOption::VALUE_REQUIRED, 'Number of workers to spawn', System::cpuCount() + 1);
         $this->addOption('write', 'W', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Takes a pair of format:filename, where format is one of the --formatter arguments');
         $this->addOption('stop-on-error', null, InputOption::VALUE_NONE, 'Stop if an error is encountered on any worker');
+        $this->addOption('replay', null, InputOption::VALUE_REQUIRED, 'filename:WorkerX - Replay from a result.json file the tests that ran on a single worker.');
     }
 
     public function runWorker()
@@ -62,7 +64,7 @@ class PhpunitParallel extends Command
 
         $formatter = $input->getOption('formatter');
 
-        $distributor = new TestDistributor($this->getTestSuite($config, $input->getArgument('filenames')));
+        $distributor = new TestDistributor($this->getTestSuite($config, $input->getArgument('filenames'), $input->getOption('replay')));
         $distributor->addListener($this->getFormatter($formatter, $output));
         $distributor->addListener($exitStatus = new ExitStatusListener());
         if ($input->getOption('stop-on-error')) {
@@ -99,37 +101,23 @@ class PhpunitParallel extends Command
         }
     }
 
-    private function getTestSuite(\PHPUnit_Util_Configuration $config, array $filenames)
+    private function getTestSuite(\PHPUnit_Util_Configuration $config, array $filenames, $replay)
     {
-        if ($filenames) {
-            $tests = new \PHPUnit_Framework_TestSuite();
-            foreach ($filenames as $filename) {
-                foreach ($this->expandFilename($filename) as $test) {
-                    $tests->addTestFile($test);
-                }
+        $testLocator = new TestLocator();
+
+        if ($replay) {
+            if (strpos($replay, ':') === false) {
+                throw new \RuntimeException("Replay must be in the form filename:WorkerX");
             }
-            return $tests;
+
+            list($filename, $workerId) = explode(':', $replay, 2);
+
+            return $testLocator->getTestsFromReplay($filename, $workerId);
+
+        } elseif ($filenames) {
+            return $testLocator->getTestsFromFilenames($filenames);
         } else {
-            return $config->getTestSuiteConfiguration();
-        }
-    }
-
-    private function expandFilename($filename) {
-        if (is_dir($filename)) {
-            $directory = new \RecursiveDirectoryIterator($filename);
-            $files = new \RecursiveIteratorIterator($directory);
-            $files = new \RegexIterator($files, '#.php$#i', \RecursiveRegexIterator::GET_MATCH);
-
-            $fileNames = [];
-            foreach ($files as $filename => $file) {
-                $fileNames[] = $filename;
-            }
-            return $fileNames;
-
-        } elseif (is_file($filename)) {
-            return [$filename];
-        } else {
-            throw new \RuntimeException("$filename does not exist!");
+            return $testLocator->getTestsFromConfig($config);
         }
     }
 

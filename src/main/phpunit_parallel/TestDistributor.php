@@ -2,11 +2,9 @@
 
 namespace phpunit_parallel;
 
-use PHPUnit_Framework_TestSuite as TestSuite;
 use phpunit_parallel\ipc\WorkerProcess;
 use phpunit_parallel\ipc\WorkerTestExecutor;
 use phpunit_parallel\listener\TestEventListener;
-use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use React\EventLoop\Factory;
 use vektah\common\subscriber\SubscriberList;
@@ -17,38 +15,24 @@ class TestDistributor
 
     private $tests;
 
-    private $lastTestId = 0;
-
     private $listeners;
 
     private $workers = [];
 
-    public function __construct(TestSuite $suite)
+    public function __construct(array $testRequests)
     {
         $this->loop = Factory::create();
         $this->listeners = new SubscriberList();
 
         $this->tests = new \SplQueue();
-        $this->enumerateTests($suite);
+        foreach ($testRequests as $test) {
+            $this->tests->push($test);
+        }
     }
 
     public function addListener(TestEventListener $listener)
     {
         $this->listeners->append($listener);
-    }
-
-    private function enumerateTests($tests) {
-        foreach ($tests as $test) {
-            if ($test instanceof \PHPUnit_Framework_Warning) {
-                // What. The. Hell?
-            } elseif ($test instanceof TestSuite) {
-                $this->enumerateTests($test);
-            } elseif ($test instanceof \PHPUnit_Framework_TestCase) {
-                $this->tests->enqueue($test);
-            } else {
-                throw new \RuntimeException("Unexpected test class type: " . get_class($test));
-            }
-        }
     }
 
     private function runNextTestOn(WorkerTestExecutor $worker) {
@@ -58,13 +42,9 @@ class TestDistributor
         }
 
         $test = $this->tests->dequeue();
-        $reflectionClass = new \ReflectionClass(get_class($test));
-        $filename = $reflectionClass->getFileName();
 
-        $request = new TestRequest(++$this->lastTestId, get_class($test), $filename, $test->getName());
-        $this->listeners->testStarted($worker, $request);
-
-        $worker->run($request);
+        $this->listeners->testStarted($worker, $test);
+        $worker->run($test);
     }
 
     public function testCompleted(WorkerTestExecutor $worker, TestResult $result)
