@@ -35,6 +35,7 @@ class PhpunitParallel extends Command
         $this->addOption('write', 'W', InputOption::VALUE_REQUIRED | InputOption::VALUE_IS_ARRAY, 'Takes a pair of format:filename, where format is one of the --formatter arguments');
         $this->addOption('stop-on-error', null, InputOption::VALUE_NONE, 'Stop if an error is encountered on any worker');
         $this->addOption('replay', null, InputOption::VALUE_REQUIRED, 'filename:WorkerX - Replay from a result.json file the tests that ran on a single worker.');
+        $this->addOption('interpreter-options', null, InputOption::VALUE_REQUIRED, 'Options to be passed through to the workers php interpreter');
     }
 
     public function runWorker()
@@ -63,8 +64,9 @@ class PhpunitParallel extends Command
         }
 
         $formatter = $input->getOption('formatter');
+        $tests = $this->getTestSuite($config, $input->getArgument('filenames'), $input->getOption('replay'));
 
-        $distributor = new TestDistributor($this->getTestSuite($config, $input->getArgument('filenames'), $input->getOption('replay')));
+        $distributor = new TestDistributor($tests, $input->getOption('interpreter-options'));
         $distributor->addListener($this->getFormatter($formatter, $output));
         $distributor->addListener($exitStatus = new ExitStatusListener());
         if ($input->getOption('stop-on-error')) {

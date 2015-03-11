@@ -12,14 +12,13 @@ use vektah\common\subscriber\SubscriberList;
 class TestDistributor
 {
     private $loop;
-
     private $tests;
-
     private $listeners;
-
     private $workers = [];
+    /** @var string */
+    private $interpreterOptions;
 
-    public function __construct(array $testRequests)
+    public function __construct(array $testRequests, $interpreterOptions)
     {
         $this->loop = Factory::create();
         $this->listeners = new SubscriberList();
@@ -28,6 +27,8 @@ class TestDistributor
         foreach ($testRequests as $test) {
             $this->tests->push($test);
         }
+
+        $this->interpreterOptions = $interpreterOptions;
     }
 
     public function addListener(TestEventListener $listener)
@@ -68,7 +69,7 @@ class TestDistributor
         $this->listeners->begin($numWorkers, count($this->tests));
 
         for ($i = 0; $i < $numWorkers; $i++) {
-            $process = new WorkerProcess($this->loop);
+            $process = new WorkerProcess($this->loop, $this->interpreterOptions);
             $process->addListener($worker = new WorkerTestExecutor($i, $this, $process));
             $this->runNextTestOn($worker);
             $this->workers[] = $worker;

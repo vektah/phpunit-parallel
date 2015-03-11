@@ -13,7 +13,7 @@ class WorkerProcess
     private $comm;
     private $listeners;
 
-    public function __construct(LoopInterface $loop)
+    public function __construct(LoopInterface $loop, $interpreterOptions)
     {
         $this->loop = $loop;
         $this->listeners = new SubscriberList();
@@ -21,7 +21,7 @@ class WorkerProcess
         $env = $_ENV;
         $env['TEST_TOKEN'] = substr(md5(rand()), 0, 7);
 
-        $this->process = new FourChannelProcess(__DIR__ . '/../../../../bin/phpunit-parallel --worker -vvv', getcwd(), $env);
+        $this->process = new FourChannelProcess("php $interpreterOptions " . __DIR__ . '/../../../../bin/phpunit-parallel --worker -vvv', getcwd(), $env);
 
         $this->start();
     }
