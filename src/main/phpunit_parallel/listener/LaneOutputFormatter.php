@@ -2,19 +2,18 @@
 
 namespace phpunit_parallel\listener;
 
+use phpunit_parallel\TestDistributor;
 use phpunit_parallel\ipc\WorkerTestExecutor;
-use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class LaneOutputFormatter implements TestEventListener
+class LaneOutputFormatter extends AbstractTestListener
 {
     private $workerCount;
     private $expectedTests;
     private $executedTests = 0;
     private $startTime;
-    private $errors = [];
     private $output;
 
     public function __construct(OutputInterface $output)
@@ -24,16 +23,22 @@ class LaneOutputFormatter implements TestEventListener
         $output->getFormatter()->setStyle('warn', new OutputFormatterStyle('black', 'yellow'));
     }
 
+    public function init(TestDistributor $distributor)
+    {
+        $distributor->addListener(new TestSummaryOutputFormatter($this->output));
+
+        if ($distributor->isTrackingMemory()) {
+            $distributor->addListener(new HighMemoryTestListener($this->output));
+        }
+
+        $distributor->addListener(new LongTestListener($this->output));
+    }
+
     public function begin($workerCount, $testCount)
     {
         $this->workerCount = $workerCount;
         $this->expectedTests = $testCount;
         $this->startTime = microtime(true);
-    }
-
-    public function testStarted(WorkerTestExecutor $worker, TestRequest $request)
-    {
-
     }
 
     public function testCompleted(WorkerTestExecutor $worker, TestResult $result)

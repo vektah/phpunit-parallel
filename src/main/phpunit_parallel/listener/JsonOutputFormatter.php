@@ -3,12 +3,11 @@
 namespace phpunit_parallel\listener;
 
 use phpunit_parallel\ipc\WorkerTestExecutor;
-use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use Symfony\Component\Console\Output\OutputInterface;
 use vektah\common\json\Json;
 
-class JsonOutputFormatter implements TestEventListener
+class JsonOutputFormatter extends AbstractTestListener
 {
     private $output;
     private $json;
@@ -16,14 +15,6 @@ class JsonOutputFormatter implements TestEventListener
     public function __construct(OutputInterface $output)
     {
         $this->output = $output;
-    }
-
-    public function begin($workerCount, $testCount)
-    {
-    }
-
-    public function testStarted(WorkerTestExecutor $worker, TestRequest $request)
-    {
     }
 
     public function testCompleted(WorkerTestExecutor $worker, TestResult $result)

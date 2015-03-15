@@ -5,13 +5,11 @@ namespace phpunit_parallel\command;
 use phpunit_parallel\TestDistributor;
 use phpunit_parallel\TestLocator;
 use phpunit_parallel\listener\ExitStatusListener;
-use phpunit_parallel\listener\ExpensiveTestListener;
 use phpunit_parallel\listener\JsonOutputFormatter;
 use phpunit_parallel\listener\LaneOutputFormatter;
 use phpunit_parallel\listener\NoiselessOutputFormatter;
 use phpunit_parallel\listener\StopOnErrorListener;
 use phpunit_parallel\listener\TapOutputFormatter;
-use phpunit_parallel\listener\TestSummaryOutputFormatter;
 use phpunit_parallel\listener\XUnitOutputFormatter;
 use phpunit_parallel\phpunit\PhpunitWorkerCommand;
 use Symfony\Component\Console\Command\Command;
@@ -36,9 +34,10 @@ class PhpunitParallel extends Command
         $this->addOption('stop-on-error', null, InputOption::VALUE_NONE, 'Stop if an error is encountered on any worker');
         $this->addOption('replay', null, InputOption::VALUE_REQUIRED, 'filename:WorkerX - Replay from a result.json file the tests that ran on a single worker.');
         $this->addOption('interpreter-options', null, InputOption::VALUE_REQUIRED, 'Options to be passed through to the workers php interpreter');
+        $this->addOption('memory-tracking', null, InputOption::VALUE_REQUIRED, 'Enable per-test tracking of memory usage', $this->isMemoryTrackingSafe());
     }
 
-    public function runWorker()
+    public function runWorker($memoryTracking = true)
     {
         $command = new PhpunitWorkerCommand();
         $args = $_SERVER['argv'];
@@ -47,13 +46,14 @@ class PhpunitParallel extends Command
             unset($args[$key]);
         }
 
-        return $command->run($args);
+        return $command->run($args, false, $memoryTracking);
     }
 
     public function execute(InputInterface $input, OutputInterface $output)
     {
+        $memoryTracking = $input->getOption('memory-tracking') == 'true';
         if ($input->getOption('worker')) {
-            return $this->runWorker();
+            return $this->runWorker($memoryTracking);
         }
 
         $configFile = $this->getConfigFile($input);
@@ -66,19 +66,11 @@ class PhpunitParallel extends Command
         $formatter = $input->getOption('formatter');
         $tests = $this->getTestSuite($config, $input->getArgument('filenames'), $input->getOption('replay'));
 
-        $distributor = new TestDistributor($tests, $input->getOption('interpreter-options'));
+        $distributor = new TestDistributor($tests, $input->getOption('interpreter-options'), $memoryTracking);
         $distributor->addListener($this->getFormatter($formatter, $output));
         $distributor->addListener($exitStatus = new ExitStatusListener());
         if ($input->getOption('stop-on-error')) {
             $distributor->addListener(new StopOnErrorListener($distributor));
-        }
-
-        if ($formatter == 'xunit' || $formatter == 'lane') {
-            $distributor->addListener(new TestSummaryOutputFormatter($output));
-        }
-
-        if (!($formatter == 'tap' || $formatter == 'json')) {
-            $distributor->addListener(new ExpensiveTestListener($output));
         }
 
         $this->handleWriters($input->getOption('write'), $distributor);
@@ -160,6 +152,25 @@ class PhpunitParallel extends Command
         }
 
         throw new \RuntimeException('Unable to find config file');
+    }
+
+    /**
+     * Due to a bug in gc https://bugs.php.net/bug.php?id=69227
+     * triggering collect cycles may cause segfaults. This is required
+     * to track memory usage. Don't enable it unless we have a fixed version
+     * of php installed.
+     */
+    private function isMemoryTrackingSafe()
+    {
+        if (PHP_MINOR_VERSION == 5 && PHP_RELEASE_VERSION < 24) {
+            return false;
+        }
+
+        if (PHP_MINOR_VERSION == 4 && PHP_RELEASE_VERSION < 7) {
+            return false;
+        }
+
+        return true;
     }
 }
 

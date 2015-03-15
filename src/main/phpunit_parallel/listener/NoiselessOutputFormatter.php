@@ -2,13 +2,13 @@
 
 namespace phpunit_parallel\listener;
 
+use phpunit_parallel\TestDistributor;
 use phpunit_parallel\ipc\WorkerTestExecutor;
-use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class NoiselessOutputFormatter implements TestEventListener
+class NoiselessOutputFormatter extends AbstractTestListener
 {
     private $expectedTests;
     private $executedTests = 0;
@@ -22,15 +22,19 @@ class NoiselessOutputFormatter implements TestEventListener
         $output->getFormatter()->setStyle('warn', new OutputFormatterStyle('black', 'yellow'));
     }
 
+    public function init(TestDistributor $distributor)
+    {
+        if ($distributor->isTrackingMemory()) {
+            $distributor->addListener(new HighMemoryTestListener($this->output));
+        }
+
+        $distributor->addListener(new LongTestListener($this->output));
+    }
+
     public function begin($workerCount, $testCount)
     {
         $this->expectedTests = $testCount;
         $this->printStatus();
-    }
-
-    public function testStarted(WorkerTestExecutor $worker, TestRequest $request)
-    {
-
     }
 
     public function testCompleted(WorkerTestExecutor $worker, TestResult $result)

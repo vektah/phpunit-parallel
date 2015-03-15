@@ -2,14 +2,14 @@
 
 namespace phpunit_parallel\listener;
 
+use phpunit_parallel\TestDistributor;
 use phpunit_parallel\Version;
 use phpunit_parallel\ipc\WorkerTestExecutor;
-use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use Symfony\Component\Console\Formatter\OutputFormatterStyle;
 use Symfony\Component\Console\Output\OutputInterface;
 
-class XUnitOutputFormatter implements TestEventListener
+class XUnitOutputFormatter extends AbstractTestListener
 {
     private $workerCount;
     private $expectedTests;
@@ -23,6 +23,17 @@ class XUnitOutputFormatter implements TestEventListener
         $output->getFormatter()->setStyle('warn', new OutputFormatterStyle('black', 'yellow'));
     }
 
+    public function init(TestDistributor $distributor)
+    {
+        $distributor->addListener(new TestSummaryOutputFormatter($this->output));
+
+        if ($distributor->isTrackingMemory()) {
+            $distributor->addListener(new HighMemoryTestListener($this->output));
+        }
+
+        $distributor->addListener(new LongTestListener($this->output));
+    }
+
     public function begin($workerCount, $testCount)
     {
         $this->workerCount = $workerCount;
@@ -31,11 +42,6 @@ class XUnitOutputFormatter implements TestEventListener
 
         $this->output->writeln("PHPUnit Parallel " . Version::VERSION);
         $this->output->writeln('');
-    }
-
-    public function testStarted(WorkerTestExecutor $worker, TestRequest $request)
-    {
-
     }
 
     public function testCompleted(WorkerTestExecutor $worker, TestResult $result)

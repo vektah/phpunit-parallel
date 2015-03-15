@@ -3,14 +3,13 @@
 namespace phpunit_parallel\listener;
 
 use phpunit_parallel\ipc\WorkerTestExecutor;
-use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Outputs a list of failing tests at the end. To be used together with xunit/lane output.
  */
-class TestSummaryOutputFormatter implements TestEventListener
+class TestSummaryOutputFormatter extends AbstractTestListener
 {
     private $executedTests = 0;
     private $startTime;
@@ -27,11 +26,6 @@ class TestSummaryOutputFormatter implements TestEventListener
     public function begin($workerCount, $testCount)
     {
         $this->startTime = microtime(true);
-    }
-
-    public function testStarted(WorkerTestExecutor $worker, TestRequest $request)
-    {
-
     }
 
     public function testCompleted(WorkerTestExecutor $worker, TestResult $result)

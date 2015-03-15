@@ -10,7 +10,7 @@ use phpunit_parallel\printer\SerializePrinter;
 class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
 {
 
-    public function run(array $argv, $exit = true) {
+    public function run(array $argv, $exit = true, $memoryTracking = true) {
         require_once(__DIR__ . '/../printer/SerializePrinter.php');
         $this->arguments['printer'] = $this->handlePrinter('phpunit_parallel\\printer\\SerializePrinter');
 
@@ -19,7 +19,10 @@ class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
         $runner = $this->createRunner();
 
         while ($testDetails = fgets(STDIN)) {
-            gc_collect_cycles();
+            if ($memoryTracking) {
+                gc_collect_cycles();
+            }
+
             if ($request = TestRequest::decode($testDetails)) {
                 SerializePrinter::getInstance()->setCurrentRequest($request);
                 $escapedClassName = str_replace('\\', '\\\\', $request->getClass());

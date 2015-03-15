@@ -3,23 +3,14 @@
 namespace phpunit_parallel\listener;
 
 use phpunit_parallel\ipc\WorkerTestExecutor;
-use phpunit_parallel\model\TestRequest;
 use phpunit_parallel\model\TestResult;
 
-class ExitStatusListener implements TestEventListener
+class ExitStatusListener extends AbstractTestListener
 {
     private $hasErrors = false;
     private $hasSkipped = false;
     private $hasIncomplete = false;
     private $hasRisky = false;
-
-    public function begin($workerCount, $testCount)
-    {
-    }
-
-    public function testStarted(WorkerTestExecutor $worker, TestRequest $request)
-    {
-    }
 
     public function testCompleted(WorkerTestExecutor $worker, TestResult $result)
     {
@@ -35,10 +26,6 @@ class ExitStatusListener implements TestEventListener
         if ($result->getRisky()) {
             $this->hasRisky = true;
         }
-    }
-
-    public function end()
-    {
     }
 
     public function getExitStatus()
