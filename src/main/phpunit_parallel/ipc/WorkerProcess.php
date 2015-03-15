@@ -22,7 +22,7 @@ class WorkerProcess
         $env['TEST_TOKEN'] = substr(md5(rand()), 0, 7);
 
         $cmd = implode(' ', [
-            "php $interpreterOptions",
+            "php $interpreterOptions -d display_errors=stderr",
             __DIR__ . '/../../../../bin/phpunit-parallel',
             '--worker',
             '-vvv',
@@ -71,5 +71,10 @@ class WorkerProcess
     public function write($string)
     {
         $this->process->stdin->write($string);
+    }
+
+    public function isRunning()
+    {
+        return $this->process->isRunning();
     }
 }

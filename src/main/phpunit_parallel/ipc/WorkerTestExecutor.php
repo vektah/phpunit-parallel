@@ -33,6 +33,11 @@ class WorkerTestExecutor implements WorkerListener
     }
 
     public function run(TestRequest $test) {
+        if (!$this->process->isRunning()) {
+            $this->process->stop();
+            $this->process->start();
+        }
+
         $this->debug("Added " . $test->encode());
 
         $this->testErr = '';
@@ -85,8 +90,6 @@ class WorkerTestExecutor implements WorkerListener
                 $this,
                 TestResult::errorFromRequest($nextExpectedTest, "Worker{$this->id} died\n{$this->testErr}")
             );
-            $this->process->stop();
-            $this->process->start();
         } elseif ($status) {
             $this->distributor->testCompleted(
                 $this,
@@ -94,8 +97,6 @@ class WorkerTestExecutor implements WorkerListener
                     'errors' => [new Error(['message' => "Worker{$this->id} died while not running any tests! code: ${status}\n{$this->testErr}"])]
                 ])
             );
-            $this->process->stop();
-            $this->process->start();
         }
     }
 

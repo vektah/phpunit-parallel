@@ -22,6 +22,7 @@ class WorkerTestExecutorTest extends \PHPUnit_Framework_TestCase
     {
         $this->distributor = Phake::mock(TestDistributor::class);
         $this->process = Phake::mock(WorkerProcess::class);
+        Phake::when($this->process)->isRunning()->thenReturn(true);
         $this->executor = new WorkerTestExecutor(1, $this->distributor, $this->process);
     }
 

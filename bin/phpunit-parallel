@@ -3,7 +3,6 @@
 
 error_reporting(E_ALL);
 ini_set('error_logging', true);
-ini_set('display_errors', true);
 
 $files =  [
     __DIR__ . "/../../../../vendor/autoload.php",
@@ -19,16 +18,18 @@ foreach ($files as $file) {
     }
 }
 
-// Recursion detection
-declare(ticks=1000);
+if (function_exists('register_tick_function')) {
+    // Recursion detection
+    declare(ticks = 1000);
 
-register_tick_function(function () {
-    if (count(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) > 600) {
-        echo "\n\nRecursion detected!\n";
-        debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
-        exit(127);
-    }
-});
+    register_tick_function(function () {
+        if (count(debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS)) > 600) {
+            echo "\n\nRecursion detected!\n";
+            debug_print_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS);
+            exit(127);
+        }
+    });
+}
 
 $application = new \phpunit_parallel\command\Application();
 $application->run();
