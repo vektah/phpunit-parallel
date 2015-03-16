@@ -76,18 +76,6 @@ class WorkerTestExecutorTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals("Worker1 died\na message", $response->getErrors()[0]->message);
     }
 
-    public function testProcessCrashWithoutStderr()
-    {
-        $this->executor->onStdErr("a message");
-        $this->executor->onExit(1);
-
-        Phake::verify($this->distributor, Phake::atMost(1))->testCompleted(Phake::anyParameters());
-        Phake::verify($this->distributor)->testCompleted($this->executor, Phake::capture($response));
-
-        $this->assertEquals(0, $response->getId());
-        $this->assertEquals("Worker1 died while not running any tests! code: 1\na message", $response->getErrors()[0]->message);
-    }
-
     public function testProcessSendsUnexpectedResult()
     {
         $request1 = new TestRequest(1, 'foo', 'oo', 'footest.php');
@@ -96,8 +84,7 @@ class WorkerTestExecutorTest extends \PHPUnit_Framework_TestCase
         $this->executor->run($request1);
         $this->executor->onTestResult(TestResult::errorFromRequest($request2, "Didn't bar!"));
 
-        Phake::verify($this->distributor, Phake::atMost(1))->testCompleted(Phake::anyParameters());
-        Phake::verify($this->distributor)->testCompleted($this->executor, Phake::capture($response));
+        Phake::verify($this->distributor, Phake::atMost(1))->testCompleted($this->executor, Phake::capture($response));
 
         $this->assertEquals(2, $response->getId());
         $this->assertEquals("Didn't bar!", $response->getErrors()[0]->message);

@@ -4,5 +4,5 @@ namespace phpunit_parallel;
 
 class Version
 {
-    const VERSION = '1.4.0';
+    const VERSION = '1.4.1';
 }

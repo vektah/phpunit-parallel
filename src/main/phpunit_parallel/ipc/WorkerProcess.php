@@ -31,6 +31,10 @@ class WorkerProcess
 
         $this->process = new FourChannelProcess($cmd, getcwd(), $env);
 
+        $this->process->on('exit', function($exitCode) {
+            $this->listeners->onExit($exitCode);
+        });
+
         $this->start();
     }
 
@@ -55,10 +59,6 @@ class WorkerProcess
 
         $this->process->stdout->on('data', function($data) {
             $this->listeners->onStdOut($data);
-        });
-
-        $this->process->on('exit', function($exitCode) {
-            $this->listeners->onExit($exitCode);
         });
 
         $this->comm->onLine(function ($line) {

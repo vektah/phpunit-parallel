@@ -90,13 +90,6 @@ class WorkerTestExecutor implements WorkerListener
                 $this,
                 TestResult::errorFromRequest($nextExpectedTest, "Worker{$this->id} died\n{$this->testErr}")
             );
-        } elseif ($status) {
-            $this->distributor->testCompleted(
-                $this,
-                new TestResult([
-                    'errors' => [new Error(['message' => "Worker{$this->id} died while not running any tests! code: ${status}\n{$this->testErr}"])]
-                ])
-            );
         }
     }
 
