@@ -88,6 +88,8 @@ class TestSummaryOutputFormatter extends AbstractTestListener
 
         if (!($this->errors || $this->warnings || $this->fatals)) {
             $this->output->writeln("OK ({$this->executedTests} tests)");
+        } else {
+            $this->output->writeln("<error>NOT OK ($errorCount errors, $fatalCount fatals, $warningCount warnings in {$this->executedTests} tests)</error>");
         }
     }
 
