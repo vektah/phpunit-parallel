@@ -13,7 +13,7 @@ class WorkerProcess
     private $comm;
     private $listeners;
 
-    public function __construct(LoopInterface $loop, $interpreterOptions, $trackMemory = true)
+    public function __construct(LoopInterface $loop, $interpreterOptions, $trackMemory = true, $configFilename = null)
     {
         $this->loop = $loop;
         $this->listeners = new SubscriberList();
@@ -21,13 +21,19 @@ class WorkerProcess
         $env = $_ENV;
         $env['TEST_TOKEN'] = substr(md5(rand()), 0, 7);
 
-        $cmd = implode(' ', [
+        $arguments = [
             "php $interpreterOptions -d display_errors=stderr",
             __DIR__ . '/../../../../bin/phpunit-parallel',
             '--worker',
             '-vvv',
             'memory-tracking ' . ($trackMemory ? 'true' : 'false'),
-        ]);
+        ];
+
+        if ($configFilename) {
+            $arguments[] = "--configuration $configFilename";
+        }
+
+        $cmd = implode(' ', $arguments);
 
         $this->process = new FourChannelProcess($cmd, getcwd(), $env);
 

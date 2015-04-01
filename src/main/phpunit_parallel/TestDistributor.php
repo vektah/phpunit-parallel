@@ -18,8 +18,9 @@ class TestDistributor
     /** @var string */
     private $interpreterOptions;
     private $trackMemory;
+    private $configFilename;
 
-    public function __construct(array $testRequests, $interpreterOptions, $trackMemory = true)
+    public function __construct(array $testRequests, $interpreterOptions, $trackMemory = true, $configFilename = null)
     {
         $this->loop = Factory::create();
         $this->listeners = new SubscriberList();
@@ -31,6 +32,7 @@ class TestDistributor
 
         $this->interpreterOptions = $interpreterOptions;
         $this->trackMemory = $trackMemory;
+        $this->configFilename = $configFilename;
     }
 
     public function addListener(TestEventListener $listener)
@@ -73,7 +75,7 @@ class TestDistributor
         $this->listeners->begin($numWorkers, count($this->tests));
 
         for ($i = 0; $i < $numWorkers; $i++) {
-            $process = new WorkerProcess($this->loop, $this->interpreterOptions, $this->trackMemory);
+            $process = new WorkerProcess($this->loop, $this->interpreterOptions, $this->trackMemory, $this->configFilename);
             $process->addListener($worker = new WorkerTestExecutor($i, $this, $process));
             $this->runNextTestOn($worker);
             $this->workers[] = $worker;

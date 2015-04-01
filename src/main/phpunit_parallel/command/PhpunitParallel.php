@@ -66,7 +66,12 @@ class PhpunitParallel extends Command
         $formatter = $input->getOption('formatter');
         $tests = $this->getTestSuite($config, $input->getArgument('filenames'), $input->getOption('replay'));
 
-        $distributor = new TestDistributor($tests, $input->getOption('interpreter-options'), $memoryTracking);
+        $distributor = new TestDistributor(
+            $tests,
+            $input->getOption('interpreter-options'),
+            $memoryTracking,
+            $input->getOption('configuration')
+        );
         $distributor->addListener($this->getFormatter($formatter, $output));
         $distributor->addListener($exitStatus = new ExitStatusListener());
         if ($input->getOption('stop-on-error')) {
