@@ -152,6 +152,7 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
      */
     public function endTest(PHPUnit_Framework_Test $test, $time)
     {
+        echo $test->getActualOutput();
         $reflectionClass = new \ReflectionClass($test);
 
         $result = new TestResult([
