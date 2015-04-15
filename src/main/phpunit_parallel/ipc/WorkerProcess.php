@@ -13,24 +13,25 @@ class WorkerProcess
     private $comm;
     private $listeners;
 
-    public function __construct(LoopInterface $loop, $interpreterOptions, $trackMemory = true, $configFilename = null)
+    public function __construct(LoopInterface $loop, $interpreterOptions, $workerId, array $options)
     {
         $this->loop = $loop;
         $this->listeners = new SubscriberList();
 
         $env = $_ENV;
         $env['TEST_TOKEN'] = substr(md5(rand()), 0, 7);
+        $env['PHPUNIT_PARALLEL_WORKER_ID'] = $workerId;
+        $env['PHPUNIT_PARALLEL'] = 'worker';
 
         $arguments = [
             "php $interpreterOptions -d display_errors=stderr",
             __DIR__ . '/../../../../bin/phpunit-parallel',
             '--worker',
             '-vvv',
-            'memory-tracking ' . ($trackMemory ? 'true' : 'false'),
         ];
 
-        if ($configFilename) {
-            $arguments[] = "--configuration $configFilename";
+        foreach ($options as $option => $value) {
+            $arguments[] = "$option $value";
         }
 
         $cmd = implode(' ', $arguments);

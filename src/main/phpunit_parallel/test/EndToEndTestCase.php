@@ -8,7 +8,7 @@ use vektah\common\json\Json;
 
 class EndToEndTestCase extends \PHPUnit_Framework_TestCase
 {
-    public function runTestProcess($arguments, $expectedExitCode = 0, $timeout = 1)
+    public function runTestProcess($arguments, $expectedExitCode = 0, $timeout = 5)
     {
         $command = __DIR__ . '/../../../../bin/phpunit-parallel ' . $arguments;
 

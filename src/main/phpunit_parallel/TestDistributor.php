@@ -17,10 +17,9 @@ class TestDistributor
     private $workers = [];
     /** @var string */
     private $interpreterOptions;
-    private $trackMemory;
-    private $configFilename;
+    private $workerOptions;
 
-    public function __construct(array $testRequests, $interpreterOptions, $trackMemory = true, $configFilename = null)
+    public function __construct(array $testRequests, $interpreterOptions, array $workerOptions)
     {
         $this->loop = Factory::create();
         $this->listeners = new SubscriberList();
@@ -31,8 +30,7 @@ class TestDistributor
         }
 
         $this->interpreterOptions = $interpreterOptions;
-        $this->trackMemory = $trackMemory;
-        $this->configFilename = $configFilename;
+        $this->workerOptions = $workerOptions;
     }
 
     public function addListener(TestEventListener $listener)
@@ -75,7 +73,7 @@ class TestDistributor
         $this->listeners->begin($numWorkers, count($this->tests));
 
         for ($i = 0; $i < $numWorkers; $i++) {
-            $process = new WorkerProcess($this->loop, $this->interpreterOptions, $this->trackMemory, $this->configFilename);
+            $process = new WorkerProcess($this->loop, $this->interpreterOptions, $i, $this->workerOptions);
             $process->addListener($worker = new WorkerTestExecutor($i, $this, $process));
             $this->runNextTestOn($worker);
             $this->workers[] = $worker;
@@ -88,6 +86,6 @@ class TestDistributor
 
     public function isTrackingMemory()
     {
-        return $this->trackMemory;
+        return isset($this->workerOptions['--memory-tracking']) && $this->workerOptions['----memory-tracking'] == true;
     }
 }

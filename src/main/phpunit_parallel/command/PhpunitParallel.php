@@ -35,9 +35,10 @@ class PhpunitParallel extends Command
         $this->addOption('replay', null, InputOption::VALUE_REQUIRED, 'filename:WorkerX - Replay from a result.json file the tests that ran on a single worker.');
         $this->addOption('interpreter-options', null, InputOption::VALUE_REQUIRED, 'Options to be passed through to the workers php interpreter');
         $this->addOption('memory-tracking', null, InputOption::VALUE_REQUIRED, 'Enable per-test tracking of memory usage', $this->isMemoryTrackingSafe());
+        $this->addOption('bootstrap', null, InputOption::VALUE_REQUIRED, 'Set the bootstrap to include before running tests.');
     }
 
-    public function runWorker($memoryTracking = true)
+    public function runWorker(InputInterface $input)
     {
         $command = new PhpunitWorkerCommand();
         $args = $_SERVER['argv'];
@@ -46,31 +47,28 @@ class PhpunitParallel extends Command
             unset($args[$key]);
         }
 
-        return $command->run($args, false, $memoryTracking);
+        return $command->run($args, false, $input->getOption('memory-tracking'), $input->getOption('bootstrap'));
     }
 
     public function execute(InputInterface $input, OutputInterface $output)
     {
-        $memoryTracking = $input->getOption('memory-tracking') == 'true';
         if ($input->getOption('worker')) {
-            return $this->runWorker($memoryTracking);
+            return $this->runWorker($input);
         }
 
         $configFile = $this->getConfigFile($input);
         $config = \PHPUnit_Util_Configuration::getInstance($configFile);
 
-        if (isset($config->getPHPUnitConfiguration()['bootstrap'])) {
-            dont_leak_env_and_include($config->getPHPUnitConfiguration()['bootstrap']);
-        }
+        $this->bootstrap($input, $config);
 
         $formatter = $input->getOption('formatter');
         $tests = $this->getTestSuite($config, $input->getArgument('filenames'), $input->getOption('replay'));
 
+
         $distributor = new TestDistributor(
             $tests,
             $input->getOption('interpreter-options'),
-            $memoryTracking,
-            $input->getOption('configuration')
+            $this->getWorkerOptions($input)
         );
         $distributor->addListener($this->getFormatter($formatter, $output));
         $distributor->addListener($exitStatus = new ExitStatusListener());
@@ -83,6 +81,39 @@ class PhpunitParallel extends Command
         $distributor->run($input->getOption('workers'));
 
         return $exitStatus->getExitStatus();
+    }
+
+    private function getWorkerOptions(InputInterface $input)
+    {
+        $options = [];
+
+        if ($memoryTracking = $input->getOption('memory-tracking')) {
+            $options['--memory-tracking'] = $memoryTracking;
+        }
+
+        if ($configuration = $input->getOption('configuration')) {
+            $options['--configuration'] = $configuration;
+        }
+
+        if ($bootstrap = $input->getOption('bootstrap')) {
+            $options['--bootstrap'] = $bootstrap;
+        }
+
+        return $options;
+    }
+
+    private function bootstrap(InputInterface $input, \PHPUnit_Util_Configuration $config)
+    {
+        $bootstrap = $input->getOption('bootstrap');
+
+        if (!$bootstrap && isset($config->getPHPUnitConfiguration()['bootstrap'])) {
+            $bootstrap = $config->getPHPUnitConfiguration()['bootstrap'];
+        }
+
+        if ($bootstrap) {
+            putenv('PHPUNIT_PARALLEL=master');
+            dont_leak_env_and_include($bootstrap);
+        }
     }
 
     private function handleWriters(array $writers, TestDistributor $distributor)

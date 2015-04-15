@@ -10,9 +10,14 @@ use phpunit_parallel\printer\SerializePrinter;
 class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
 {
 
-    public function run(array $argv, $exit = true, $memoryTracking = true) {
+    public function run(array $argv, $exit = true, $memoryTracking = true, $bootstrap = null)
+    {
         require_once(__DIR__ . '/../printer/SerializePrinter.php');
         $this->arguments['printer'] = $this->handlePrinter('phpunit_parallel\\printer\\SerializePrinter');
+
+        if ($bootstrap) {
+            $this->arguments['bootstrap'] = $bootstrap;
+        }
 
         $this->handleConfig();
 
@@ -44,7 +49,8 @@ class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
         return 0;
     }
 
-    private function showError(TestRequest $request, $string) {
+    private function showError(TestRequest $request, $string)
+    {
         SerializePrinter::getInstance()->sendError(TestResult::errorFromRequest($request, $string));
     }
 
@@ -92,7 +98,9 @@ class PhpunitWorkerCommand extends \PHPUnit_TextUI_Command
 
             $configuration->handlePHPConfiguration();
 
-            if (!isset($this->arguments['bootstrap']) && isset($phpunit['bootstrap'])) {
+            if (isset($this->arguments['bootstrap'])) {
+                $this->handleBootstrap($this->arguments['bootstrap']);
+            } elseif (isset($phpunit['bootstrap'])) {
                 $this->handleBootstrap($phpunit['bootstrap']);
             }
 
