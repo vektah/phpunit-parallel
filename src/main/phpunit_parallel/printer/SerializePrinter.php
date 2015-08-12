@@ -78,28 +78,31 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
      */
     public function addError(PHPUnit_Framework_Test $test, Exception $e, $time)
     {
-        if ($e instanceof \PHPUnit_Framework_ExpectationFailedException && $e->getComparisonFailure()) {
-            $message = $e->getComparisonFailure()->toString();
+        $error = [
+            'class' => get_class($e),
+            'message' => $e->getMessage(),
+            'filename' => $e->getFile(),
+            'line' => $e->getLine(),
+            'severity' => 'error',
+            'stacktrace' => $e->getTrace(),
+        ];
+
+        if ($e instanceof \PHPUnit_Framework_ExceptionWrapper) {
+            $error['class'] = $e->getClassname();
+            $error['stacktrace'] = $e->getSerializableTrace();
+        } elseif ($e instanceof \PHPUnit_Framework_ExpectationFailedException && $e->getComparisonFailure()) {
+            $error['message'] = $e->getComparisonFailure()->toString();
         } elseif ($e instanceof \PHPUnit_Framework_SelfDescribing) {
-            $message = $e->toString();
-        } else {
-            $message = $e->getMessage();
+            $error['message'] = $e->toString();
         }
 
-        $trace = TraceFormatter::create($e->getTrace())
+        $error['stacktrace'] = TraceFormatter::create($error['stacktrace'])
             ->filterBelow('file', '#TextUI/TestRunner#')
             ->replace('file', getcwd() . '/', '')
             ->wrapNotMatching('file', '#vendor#', '<comment>', '</comment>')
             ->printf("%{id}3d. %{call}s\n\t- %{location}s");
 
-        $this->errors[] = [
-            'class' => get_class($e),
-            'message' => $message,
-            'filename' => $e->getFile(),
-            'line' => $e->getLine(),
-            'severity' => 'error',
-            'stacktrace' => $trace,
-        ];
+        $this->errors[] = $error;
     }
 
     /**
