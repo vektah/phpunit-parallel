@@ -86,6 +86,6 @@ class TestDistributor
 
     public function isTrackingMemory()
     {
-        return isset($this->workerOptions['--memory-tracking']) && $this->workerOptions['----memory-tracking'] == true;
+        return isset($this->workerOptions['--memory-tracking']) && $this->workerOptions['--memory-tracking'] == true;
     }
 }
