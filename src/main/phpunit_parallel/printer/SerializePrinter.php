@@ -87,20 +87,31 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
             'stacktrace' => $e->getTrace(),
         ];
 
+        $previous = $e->getPrevious();
         if ($e instanceof \PHPUnit_Framework_ExceptionWrapper) {
             $error['class'] = $e->getClassname();
             $error['stacktrace'] = $e->getSerializableTrace();
+            $previous = $e->getPreviousWrapped();
         } elseif ($e instanceof \PHPUnit_Framework_ExpectationFailedException && $e->getComparisonFailure()) {
             $error['message'] = $e->getComparisonFailure()->toString();
         } elseif ($e instanceof \PHPUnit_Framework_SelfDescribing) {
             $error['message'] = $e->toString();
         }
 
-        $error['stacktrace'] = TraceFormatter::create($error['stacktrace'])
-            ->filterBelow('file', '#TextUI/TestRunner#')
-            ->replace('file', getcwd() . '/', '')
-            ->wrapNotMatching('file', '#vendor#', '<comment>', '</comment>')
-            ->printf("%{id}3d. %{call}s\n\t- %{location}s");
+        $error['stacktrace'] = $this->stackTraceToFormattedString($error['stacktrace']);
+
+        while ($previous) {
+            $previousStackTrace = $previous->getTrace();
+            $nextPrevious = $previous->getPrevious();
+            if ($previous instanceof \PHPUnit_Framework_ExceptionWrapper) {
+                $previousStackTrace = $previous->getSerializableTrace();
+                $nextPrevious = $previous->getPreviousWrapped();
+            }
+
+            $error['stacktrace'] .= "\nCaused by\n" . $this->stackTraceToFormattedString($previousStackTrace);
+
+            $previous = $nextPrevious;
+        }
 
         $this->errors[] = $error;
     }
@@ -196,5 +207,15 @@ class SerializePrinter extends \PHPUnit_Util_Printer implements PHPUnit_Framewor
     public function sendError($result)
     {
         fwrite($this->fd, $result->encode());
+    }
+
+    private function stackTraceToFormattedString($trace)
+    {
+        return TraceFormatter::create($trace)
+            ->filterBelow('file', '#TextUI/TestRunner#')
+            ->replace('file', getcwd() . '/', '')
+            ->wrapNotMatching('file', '#vendor#', '<comment>', '</comment>')
+            ->printf("%{id}3d. %{call}s\n\t- %{location}s")
+            ;
     }
 }
