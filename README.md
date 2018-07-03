@@ -1,10 +1,9 @@
-# phpunit-parallel [![Build Status](https://travis-ci.org/Vektah/phpunit-parallel.svg)](https://travis-ci.org/Vektah/phpunit-parallel)
+# ABANDONED - phpunit-parallel [![Build Status](https://travis-ci.org/Vektah/phpunit-parallel.svg)](https://travis-ci.org/Vektah/phpunit-parallel)
 Another Concurrent Test Executor for PHPUnit
 
-Why? I wanted a runner that:
- - Handled fatal errors in workers well
- - Kept stats on test duration and memory usage
- - Ties directly into phpunit, leveraging as much of its code as possible
+I'm no longer maintaining this project, it is here as an archive only.
+
+For an alternative, check out [fasttest](https://github.com/liuggio/fastest)
 
 How does it work?
 =================
